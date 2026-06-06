@@ -1,0 +1,421 @@
+import { useState, useEffect } from 'react';
+import { Outlet, useNavigate, useLocation } from 'react-router';
+import { motion, AnimatePresence } from 'motion/react';
+import { User, Lock, ShoppingBag, MessageSquare, LogOut, Home, Eye, EyeOff } from 'lucide-react';
+
+const CLIENTS_KEY = 'barsuarte_clients';
+const CURRENT_CLIENT_KEY = 'barsuarte_current_client';
+
+interface Client {
+  id: string;
+  name: string;
+  surname: string;
+  email: string;
+  phone: string;
+  password: string;
+  createdAt: string;
+}
+
+export function ClientPortal() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [currentClient, setCurrentClient] = useState<Client | null>(null);
+  const [showLogin, setShowLogin] = useState(true);
+  const [showPassword, setShowPassword] = useState(false);
+
+  // Form states
+  const [loginEmail, setLoginEmail] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+  const [registerName, setRegisterName] = useState('');
+  const [registerSurname, setRegisterSurname] = useState('');
+  const [registerEmail, setRegisterEmail] = useState('');
+  const [registerPhone, setRegisterPhone] = useState('');
+  const [registerPassword, setRegisterPassword] = useState('');
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    const savedClient = localStorage.getItem(CURRENT_CLIENT_KEY);
+    if (savedClient) {
+      setCurrentClient(JSON.parse(savedClient));
+      setIsLoggedIn(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!isLoggedIn && location.pathname !== '/clientes') {
+      navigate('/clientes', { replace: true });
+    }
+  }, [isLoggedIn, location.pathname, navigate]);
+
+  const getClients = (): Client[] => {
+    const data = localStorage.getItem(CLIENTS_KEY);
+    return data ? JSON.parse(data) : [];
+  };
+
+  const saveClients = (clients: Client[]) => {
+    localStorage.setItem(CLIENTS_KEY, JSON.stringify(clients));
+  };
+
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+
+    const clients = getClients();
+    const client = clients.find(
+      (c) => c.email === loginEmail && c.password === loginPassword
+    );
+
+    if (client) {
+      setCurrentClient(client);
+      setIsLoggedIn(true);
+      localStorage.setItem(CURRENT_CLIENT_KEY, JSON.stringify(client));
+      navigate('/clientes/productos');
+    } else {
+      setError('Correo o contraseña incorrectos');
+    }
+  };
+
+  const handleRegister = (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+
+    if (!registerName || !registerSurname || !registerEmail || !registerPhone || !registerPassword) {
+      setError('Todos los campos son obligatorios');
+      return;
+    }
+
+    const clients = getClients();
+
+    if (clients.find((c) => c.email === registerEmail)) {
+      setError('Este correo ya está registrado');
+      return;
+    }
+
+    const newClient: Client = {
+      id: Date.now().toString(),
+      name: registerName,
+      surname: registerSurname,
+      email: registerEmail,
+      phone: registerPhone,
+      password: registerPassword,
+      createdAt: new Date().toISOString(),
+    };
+
+    saveClients([...clients, newClient]);
+    setCurrentClient(newClient);
+    setIsLoggedIn(true);
+    localStorage.setItem(CURRENT_CLIENT_KEY, JSON.stringify(newClient));
+    navigate('/clientes/productos');
+  };
+
+  const handleLogout = () => {
+    setIsLoggedIn(false);
+    setCurrentClient(null);
+    localStorage.removeItem(CURRENT_CLIENT_KEY);
+    setLoginEmail('');
+    setLoginPassword('');
+    setRegisterName('');
+    setRegisterSurname('');
+    setRegisterEmail('');
+    setRegisterPhone('');
+    setRegisterPassword('');
+    navigate('/clientes');
+  };
+
+  if (!isLoggedIn) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-fuchsia-50 via-purple-50 to-white flex items-center justify-center px-4 py-12">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="w-full max-w-md"
+        >
+          {/* Back to home */}
+          <button
+            onClick={() => navigate('/')}
+            className="flex items-center gap-2 text-gray-600 hover:text-fuchsia-600 mb-6 transition-colors"
+          >
+            <Home className="w-4 h-4" />
+            Volver al sitio principal
+          </button>
+
+          <div className="bg-white rounded-3xl shadow-2xl shadow-fuchsia-200/50 p-8">
+            {/* Logo */}
+            <div className="text-center mb-8">
+              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-fuchsia-600 to-purple-600 flex items-center justify-center">
+                <span className="text-white font-extrabold text-2xl">BA</span>
+              </div>
+              <h1 className="text-3xl font-bold bg-gradient-to-r from-fuchsia-600 to-purple-600 bg-clip-text text-transparent mb-2">
+                Portal de Clientes
+              </h1>
+              <p className="text-gray-600 text-sm">Barsuarte Artesanías</p>
+            </div>
+
+            {/* Toggle */}
+            <div className="flex gap-2 mb-6 bg-gray-100 p-1 rounded-xl">
+              <button
+                onClick={() => setShowLogin(true)}
+                className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition-all ${
+                  showLogin
+                    ? 'bg-white text-fuchsia-600 shadow-sm'
+                    : 'text-gray-600 hover:text-fuchsia-600'
+                }`}
+              >
+                Iniciar Sesión
+              </button>
+              <button
+                onClick={() => setShowLogin(false)}
+                className={`flex-1 py-2.5 rounded-lg text-sm font-medium transition-all ${
+                  !showLogin
+                    ? 'bg-white text-fuchsia-600 shadow-sm'
+                    : 'text-gray-600 hover:text-fuchsia-600'
+                }`}
+              >
+                Registrarse
+              </button>
+            </div>
+
+            {error && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-red-50 text-red-600 px-4 py-3 rounded-xl mb-4 text-sm"
+              >
+                {error}
+              </motion.div>
+            )}
+
+            <AnimatePresence mode="wait">
+              {showLogin ? (
+                <motion.form
+                  key="login"
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 20 }}
+                  onSubmit={handleLogin}
+                  className="space-y-4"
+                >
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                      Correo Electrónico
+                    </label>
+                    <input
+                      type="email"
+                      value={loginEmail}
+                      onChange={(e) => setLoginEmail(e.target.value)}
+                      placeholder="tu@email.com"
+                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-fuchsia-500 focus:border-transparent outline-none transition-all"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                      Contraseña
+                    </label>
+                    <div className="relative">
+                      <input
+                        type={showPassword ? 'text' : 'password'}
+                        value={loginPassword}
+                        onChange={(e) => setLoginPassword(e.target.value)}
+                        placeholder="••••••••"
+                        className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-fuchsia-500 focus:border-transparent outline-none transition-all"
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                      >
+                        {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                      </button>
+                    </div>
+                  </div>
+                  <button
+                    type="submit"
+                    className="w-full bg-gradient-to-r from-fuchsia-600 to-purple-600 text-white py-3 rounded-xl font-medium hover:shadow-lg hover:shadow-fuchsia-300 transition-all flex items-center justify-center gap-2"
+                  >
+                    <Lock className="w-4 h-4" />
+                    Iniciar Sesión
+                  </button>
+                </motion.form>
+              ) : (
+                <motion.form
+                  key="register"
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  onSubmit={handleRegister}
+                  className="space-y-4"
+                >
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                      Nombre
+                    </label>
+                    <input
+                      type="text"
+                      value={registerName}
+                      onChange={(e) => setRegisterName(e.target.value)}
+                      placeholder="Tu nombre"
+                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-fuchsia-500 focus:border-transparent outline-none transition-all"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                      Apellido
+                    </label>
+                    <input
+                      type="text"
+                      value={registerSurname}
+                      onChange={(e) => setRegisterSurname(e.target.value)}
+                      placeholder="Tu apellido"
+                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-fuchsia-500 focus:border-transparent outline-none transition-all"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                      Correo Electrónico
+                    </label>
+                    <input
+                      type="email"
+                      value={registerEmail}
+                      onChange={(e) => setRegisterEmail(e.target.value)}
+                      placeholder="tu@email.com"
+                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-fuchsia-500 focus:border-transparent outline-none transition-all"
+                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-fuchsia-500 focus:border-transparent outline-none transition-all"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                      Teléfono celular
+                    </label>
+                    <input
+                      type="tel"
+                      value={registerPhone}
+                      onChange={(e) => setRegisterPhone(e.target.value)}
+                      placeholder="300 000 0000"
+                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-fuchsia-500 focus:border-transparent outline-none transition-all"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                      Contraseña
+                    </label>
+                    <div className="relative">
+                      <input
+                        type={showPassword ? 'text' : 'password'}
+                        value={registerPassword}
+                        onChange={(e) => setRegisterPassword(e.target.value)}
+                        placeholder="••••••••"
+                        className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-fuchsia-500 focus:border-transparent outline-none transition-all"
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                      >
+                        {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                      </button>
+                    </div>
+                  </div>
+                  <button
+                    type="submit"
+                    className="w-full bg-gradient-to-r from-fuchsia-600 to-purple-600 text-white py-3 rounded-xl font-medium hover:shadow-lg hover:shadow-fuchsia-300 transition-all flex items-center justify-center gap-2"
+                  >
+                    <User className="w-4 h-4" />
+                    Crear Cuenta
+                  </button>
+                </motion.form>
+              )}
+            </AnimatePresence>
+          </div>
+        </motion.div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-fuchsia-50 via-purple-50 to-white">
+      {/* Header */}
+      <header className="bg-white shadow-md border-b border-fuchsia-100">
+        <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-fuchsia-600 to-purple-600 flex items-center justify-center">
+              <span className="text-white font-extrabold">BA</span>
+            </div>
+            <div>
+              <h1 className="font-bold text-gray-800">Barsuarte Artesanías</h1>
+                <p className="text-xs text-gray-500">
+                  Bienvenido, {currentClient?.name} {currentClient?.surname || ''}
+                </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => navigate('/')}
+              className="flex items-center gap-2 px-3 py-2 text-sm text-gray-600 hover:text-fuchsia-600 hover:bg-fuchsia-50 rounded-lg transition-all"
+            >
+              <Home className="w-4 h-4" />
+              Inicio
+            </button>
+            <button
+              onClick={() => navigate('/clientes/perfil')}
+              className="flex items-center gap-2 px-3 py-2 text-sm text-gray-600 hover:text-fuchsia-600 hover:bg-fuchsia-50 rounded-lg transition-all"
+            >
+              <User className="w-4 h-4" />
+              Perfil
+            </button>
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-2 px-3 py-2 text-sm text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
+            >
+              <LogOut className="w-4 h-4" />
+              Salir
+            </button>
+          </div>
+        </div>
+      </header>
+
+      {/* Navigation */}
+      <nav className="bg-white border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="flex gap-1">
+            <button
+              onClick={() => navigate('/clientes/productos')}
+              className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+                location.pathname === '/clientes/productos' || location.pathname === '/clientes'
+                  ? 'border-fuchsia-600 text-fuchsia-600'
+                  : 'border-transparent text-gray-600 hover:text-fuchsia-600'
+              }`}
+            >
+              <ShoppingBag className="w-4 h-4" />
+              Catálogo de Productos
+            </button>
+            <button
+              onClick={() => navigate('/clientes/mensajes')}
+              className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+                location.pathname === '/clientes/mensajes'
+                  ? 'border-fuchsia-600 text-fuchsia-600'
+                  : 'border-transparent text-gray-600 hover:text-fuchsia-600'
+              }`}
+            >
+              <MessageSquare className="w-4 h-4" />
+              Mensajes
+            </button>
+          </div>
+        </div>
+      </nav>
+
+      {/* Content */}
+      <main className="max-w-7xl mx-auto px-4 py-8">
+        <Outlet context={{ client: currentClient }} />
+      </main>
+    </div>
+  );
+}
