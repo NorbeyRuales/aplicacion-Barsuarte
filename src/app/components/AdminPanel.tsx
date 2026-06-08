@@ -20,6 +20,16 @@ import {
   Video,
   X,
 } from 'lucide-react';
+import {
+  clientsService,
+  productsService,
+  mediaService,
+  messagesService,
+  type Client,
+  type Product,
+  type ProductMedia,
+  type Message,
+} from '../../services/supabase';
 
 const ADMIN_PASSWORD = 'barsuarte2024';
 const PRODUCTS_KEY = 'barsuarte_products';
@@ -35,18 +45,6 @@ type ProductCategory =
   | 'cuadros-decorativos'
   | 'mini-cuadros'
   | 'entre-vientos';
-
-interface Message {
-  id: string;
-  clientId: string;
-  clientName: string;
-  subject: string;
-  message: string;
-  status: 'pending' | 'answered';
-  createdAt: string;
-  adminResponse?: string;
-  respondedAt?: string;
-}
 
 export interface MediaItem {
   id: string;
@@ -80,16 +78,6 @@ export interface ProductItem {
   media: ProductMediaItem[];
   createdAt: string;
   updatedAt: string;
-}
-
-interface Client {
-  id: string;
-  name: string;
-  surname: string;
-  email: string;
-  phone: string;
-  password: string;
-  createdAt: string;
 }
 
 interface AdminPanelProps {
@@ -299,19 +287,25 @@ export function AdminPanel({ isOpen, onClose, onAuthChange }: AdminPanelProps) {
   useEffect(() => {
     if (!authenticated) return;
 
-    const refresh = () => {
-      setProducts(loadProducts());
-      setMessages(safeParse<Message[]>(localStorage.getItem(MESSAGES_KEY), []));
-      setClients(safeParse<Client[]>(localStorage.getItem(CLIENTS_KEY), []));
+    const refresh = async () => {
+      try {
+        const [supabaseProducts, supabaseMessages, supabaseClients] = await Promise.all([
+          productsService.getAllWithMedia(),
+          messagesService.getAll(),
+          clientsService.getAll(),
+        ]);
+
+        setProducts(supabaseProducts as ProductItem[]);
+        setMessages(supabaseMessages);
+        setClients(supabaseClients);
+      } catch (error) {
+        console.error('Error loading admin data:', error);
+      }
     };
 
     refresh();
-    window.addEventListener('storage', refresh);
     const interval = setInterval(refresh, 2000);
-    return () => {
-      window.removeEventListener('storage', refresh);
-      clearInterval(interval);
-    };
+    return () => clearInterval(interval);
   }, [authenticated]);
 
   const groupedProducts = useMemo(() => products, [products]);
@@ -375,6 +369,22 @@ export function AdminPanel({ isOpen, onClose, onAuthChange }: AdminPanelProps) {
       )
     );
 
+  const refreshData = async () => {
+    try {
+      const [supabaseProducts, supabaseMessages, supabaseClients] = await Promise.all([
+        productsService.getAllWithMedia(),
+        messagesService.getAll(),
+        clientsService.getAll(),
+      ]);
+
+      setProducts(supabaseProducts as ProductItem[]);
+      setMessages(supabaseMessages);
+      setClients(supabaseClients);
+    } catch (error) {
+      console.error('Error cargando datos del panel:', error);
+    }
+  };
+
   const handleSaveProduct = async () => {
     if (!productForm.title.trim()) {
       showToast('Escribe el nombre del producto', 'err');
@@ -387,47 +397,64 @@ export function AdminPanel({ isOpen, onClose, onAuthChange }: AdminPanelProps) {
     }
 
     setUploading(true);
-    const productId = editingProductId || `${Date.now()}`;
-    const newMedia = selectedFiles.length > 0 ? await createMediaItems(selectedFiles, productId) : [];
-    const now = new Date().toISOString();
 
-    let updatedProducts: ProductItem[];
+    const newMedia = selectedFiles.length > 0
+      ? await createMediaItems(selectedFiles, '')
+      : [];
 
-    if (editingProductId) {
-      updatedProducts = products.map((product) =>
-        product.id === editingProductId
-          ? {
-              ...product,
-              title: productForm.title,
-              description: productForm.description,
-              category: productForm.category,
-              price: productForm.price,
-              media: [...product.media, ...newMedia],
-              updatedAt: now,
-            }
-          : product
-      );
-    } else {
-      updatedProducts = [
-        ...products,
-        {
-          id: productId,
+    try {
+      if (editingProductId) {
+        const updatedProduct = await productsService.update(editingProductId, {
           title: productForm.title,
           description: productForm.description,
           category: productForm.category,
           price: productForm.price,
-          media: newMedia,
-          createdAt: now,
-          updatedAt: now,
-        },
-      ];
-    }
+        });
 
-    setProducts(updatedProducts);
-    saveProducts(updatedProducts);
-    setUploading(false);
-    resetProductForm();
-    showToast(editingProductId ? 'Producto actualizado correctamente' : 'Producto creado correctamente');
+        if (!updatedProduct) {
+          showToast('No se pudo actualizar el producto', 'err');
+          return;
+        }
+
+        for (const mediaItem of newMedia) {
+          await mediaService.addMedia(updatedProduct.id, {
+            type: mediaItem.type,
+            dataUrl: mediaItem.dataUrl,
+            name: mediaItem.name,
+            uploadedAt: mediaItem.uploadedAt,
+          });
+        }
+
+        showToast('Producto actualizado correctamente');
+      } else {
+        const created = await productsService.createWithMedia(
+          {
+            title: productForm.title,
+            description: productForm.description,
+            category: productForm.category,
+            price: productForm.price,
+          },
+          newMedia.map((item) => ({
+            type: item.type,
+            dataUrl: item.dataUrl,
+            name: item.name,
+            uploadedAt: item.uploadedAt,
+          }))
+        );
+
+        if (!created) {
+          showToast('No se pudo crear el producto', 'err');
+          return;
+        }
+
+        showToast('Producto creado correctamente');
+      }
+
+      await refreshData();
+      resetProductForm();
+    } finally {
+      setUploading(false);
+    }
   };
 
   const handleEditProduct = (product: ProductItem) => {
@@ -442,41 +469,47 @@ export function AdminPanel({ isOpen, onClose, onAuthChange }: AdminPanelProps) {
     setActiveTab('products');
   };
 
-  const handleDeleteProduct = (id: string) => {
-    const updated = products.filter((product) => product.id !== id);
-    setProducts(updated);
-    saveProducts(updated);
+  const handleDeleteProduct = async (id: string) => {
+    const deleted = await productsService.delete(id);
+    if (!deleted) {
+      showToast('No se pudo eliminar el producto', 'err');
+      return;
+    }
+
     if (editingProductId === id) {
       resetProductForm();
     }
+
+    await refreshData();
     showToast('Producto eliminado', 'err');
   };
 
-  const handleCreateClient = () => {
+  const handleCreateClient = async () => {
     if (!newClientName || !newClientSurname || !newClientEmail || !newClientPhone || !newClientPassword) {
       showToast('Completa todos los campos', 'err');
       return;
     }
 
-    const exists = clients.find((client) => client.email === newClientEmail);
+    const exists = clients.some((client) => client.email === newClientEmail);
     if (exists) {
       showToast('El correo ya está registrado', 'err');
       return;
     }
 
-    const client: Client = {
-      id: `${Date.now()}`,
+    const createdClient = await clientsService.create({
       name: newClientName,
       surname: newClientSurname,
       email: newClientEmail,
       phone: newClientPhone,
       password: newClientPassword,
-      createdAt: new Date().toISOString(),
-    };
+    });
 
-    const updated = [...clients, client];
-    localStorage.setItem(CLIENTS_KEY, JSON.stringify(updated));
-    setClients(updated);
+    if (!createdClient) {
+      showToast('No se pudo crear el cliente', 'err');
+      return;
+    }
+
+    setClients((prev) => [...prev, createdClient]);
     setNewClientName('');
     setNewClientSurname('');
     setNewClientEmail('');
@@ -485,35 +518,32 @@ export function AdminPanel({ isOpen, onClose, onAuthChange }: AdminPanelProps) {
     showToast('Cliente creado correctamente');
   };
 
-  const handleDeleteClient = (id: string) => {
-    const updated = clients.filter((client) => client.id !== id);
-    localStorage.setItem(CLIENTS_KEY, JSON.stringify(updated));
-    setClients(updated);
+  const handleDeleteClient = async (id: string) => {
+    const deleted = await clientsService.delete(id);
+    if (!deleted) {
+      showToast('No se pudo eliminar el cliente', 'err');
+      return;
+    }
+
+    setClients((prev) => prev.filter((client) => client.id !== id));
     showToast('Cliente eliminado', 'err');
   };
 
-  const handleRespond = (messageId: string) => {
+  const handleRespond = async (messageId: string) => {
     const response = responses[messageId];
     if (!response || !response.trim()) {
       showToast('Escribe una respuesta primero', 'err');
       return;
     }
 
-    const allMessages = safeParse<Message[]>(localStorage.getItem(MESSAGES_KEY), []);
-    const updated = allMessages.map((message) =>
-      message.id === messageId
-        ? {
-            ...message,
-            status: 'answered' as const,
-            adminResponse: response,
-            respondedAt: new Date().toISOString(),
-          }
-        : message
-    );
+    const updated = await messagesService.respond(messageId, response);
+    if (!updated) {
+      showToast('No se pudo responder el mensaje', 'err');
+      return;
+    }
 
-    localStorage.setItem(MESSAGES_KEY, JSON.stringify(updated));
-    setMessages(updated);
     setResponses((prev) => ({ ...prev, [messageId]: '' }));
+    await refreshData();
     showToast('Respuesta enviada al cliente');
   };
 

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router';
 import { motion } from 'motion/react';
 import { ArrowLeft, Lock, Images } from 'lucide-react';
@@ -6,7 +6,7 @@ import { Navbar } from '../components/Navbar';
 import { Footer } from '../components/Footer';
 import { AdminPanel } from '../components/AdminPanel';
 import { PageHero } from '../components/PageHero';
-import { groupMediaByProduct, loadMedia, type ProductItem } from '../components/AdminPanel';
+import { useSupabaseProducts } from '../../hooks/useSupabase';
 
 const categoryConfig = {
   'porta-llaves': {
@@ -52,22 +52,11 @@ export function CategoryPage() {
   const navigate = useNavigate();
   const [adminOpen, setAdminOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
-  const [products, setProducts] = useState<ProductItem[]>([]);
+  const { products = [] } = useSupabaseProducts();
 
   const config = category && category in categoryConfig
     ? categoryConfig[category as keyof typeof categoryConfig]
     : null;
-
-  useEffect(() => {
-    const refresh = () => setProducts(groupMediaByProduct(loadMedia()));
-    refresh();
-    window.addEventListener('storage', refresh);
-    const interval = setInterval(refresh, 2000);
-    return () => {
-      window.removeEventListener('storage', refresh);
-      clearInterval(interval);
-    };
-  }, []);
 
   // Filtrar productos por categoría (basado en tags o nombre)
   const categoryProducts = products.filter((item) => item.category === category);
@@ -140,11 +129,11 @@ export function CategoryPage() {
                       className="group relative overflow-hidden rounded-2xl shadow-lg hover:shadow-2xl hover:shadow-fuchsia-200 transition-all duration-300"
                       onClick={handleProductClick}
                     >
-                      {product.media[0]?.type === 'video' ? (
-                        <video src={product.media[0].dataUrl} className="w-full h-80 object-cover group-hover:scale-110 transition-transform duration-500" />
+                      {product.media?.[0]?.type === 'video' ? (
+                        <video src={product.media?.[0]?.dataUrl} className="w-full h-80 object-cover group-hover:scale-110 transition-transform duration-500" />
                       ) : (
                         <img
-                          src={product.media[0]?.dataUrl}
+                          src={product.media?.[0]?.dataUrl}
                           alt={product.title}
                           className="w-full h-80 object-cover group-hover:scale-110 transition-transform duration-500"
                         />

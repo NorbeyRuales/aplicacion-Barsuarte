@@ -2,35 +2,16 @@ import { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { Send, MessageSquare, Clock, CheckCircle2, User } from 'lucide-react';
 import { useOutletContext } from 'react-router';
-
-interface Client {
-  id: string;
-  name: string;
-  surname: string;
-  email: string;
-}
+import { useSupabaseMessages } from '../../hooks/useSupabase';
+import { messagesService, type Client, type Message } from '../../services/supabase';
 
 interface OutletContext {
   client: Client;
 }
 
-interface Message {
-  id: string;
-  clientId: string;
-  clientName: string;
-  subject: string;
-  message: string;
-  status: 'pending' | 'answered';
-  createdAt: string;
-  adminResponse?: string;
-  respondedAt?: string;
-}
-
-const MESSAGES_KEY = 'barsuarte_messages';
-
 export function ClientMessages() {
   const { client } = useOutletContext<OutletContext>();
-  const [messages, setMessages] = useState<Message[]>([]);
+  const { messages, refresh } = useSupabaseMessages(client.id);
   const [subject, setSubject] = useState('');
   const [message, setMessage] = useState('');
   const [showSuccess, setShowSuccess] = useState(false);
@@ -48,38 +29,28 @@ export function ClientMessages() {
   }, []);
 
   useEffect(() => {
-    loadMessages();
-    const interval = setInterval(loadMessages, 2000);
-    return () => clearInterval(interval);
-  }, [client.id]);
+    refresh();
+  }, [client.id, refresh]);
 
-  const loadMessages = () => {
-    const data = localStorage.getItem(MESSAGES_KEY);
-    const allMessages: Message[] = data ? JSON.parse(data) : [];
-    setMessages(allMessages.filter((m) => m.clientId === client.id));
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const newMessage: Message = {
-      id: Date.now().toString(),
+    const created = await messagesService.create({
       clientId: client.id,
       clientName: `${client.name} ${client.surname || ''}`.trim(),
       subject,
       message,
       status: 'pending',
-      createdAt: new Date().toISOString(),
-    };
+    });
 
-    const data = localStorage.getItem(MESSAGES_KEY);
-    const allMessages: Message[] = data ? JSON.parse(data) : [];
-    localStorage.setItem(MESSAGES_KEY, JSON.stringify([...allMessages, newMessage]));
+    if (!created) {
+      return;
+    }
 
     setSubject('');
     setMessage('');
     setShowSuccess(true);
-    loadMessages();
+    refresh();
 
     setTimeout(() => setShowSuccess(false), 3000);
   };

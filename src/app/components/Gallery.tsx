@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { motion } from 'motion/react';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 import { Play, Images, Lock } from 'lucide-react';
-import { groupMediaByProduct, loadMedia, type ProductItem } from './AdminPanel';
+import { useSupabaseProducts } from '../../hooks/useSupabase';
 
 const defaultImages = [
   {
@@ -24,22 +24,11 @@ interface GalleryProps {
 }
 
 export function Gallery({ onAdminClick }: GalleryProps) {
-  const [products, setProducts] = useState<ProductItem[]>([]);
+  const { products = [] } = useSupabaseProducts();
   const [activeTab, setActiveTab] = useState<'all' | 'images' | 'videos'>('all');
 
-  useEffect(() => {
-    const refresh = () => setProducts(groupMediaByProduct(loadMedia()));
-    refresh();
-    window.addEventListener('storage', refresh);
-    const interval = setInterval(refresh, 2000);
-    return () => {
-      window.removeEventListener('storage', refresh);
-      clearInterval(interval);
-    };
-  }, []);
-
-  const uploadedImages = products.filter((product) => product.media.some((item) => item.type === 'image'));
-  const uploadedVideos = products.filter((product) => product.media.some((item) => item.type === 'video'));
+  const uploadedImages = products.filter((product) => product.media?.some((item) => item.type === 'image'));
+  const uploadedVideos = products.filter((product) => product.media?.some((item) => item.type === 'video'));
 
   const hasUploaded = products.length > 0;
 
@@ -96,11 +85,11 @@ export function Gallery({ onAdminClick }: GalleryProps) {
                     transition={{ duration: 0.5, delay: index * 0.08 }}
                     className="group relative overflow-hidden rounded-2xl shadow-lg hover:shadow-2xl hover:shadow-fuchsia-200 transition-all duration-300"
                   >
-                    {product.media[0]?.type === 'video' ? (
-                      <video src={product.media[0].dataUrl} className="w-full h-80 object-cover group-hover:scale-110 transition-transform duration-500" />
+                    {product.media?.[0]?.type === 'video' ? (
+                      <video src={product.media?.[0]?.dataUrl} className="w-full h-80 object-cover group-hover:scale-110 transition-transform duration-500" />
                     ) : (
                       <img
-                        src={product.media[0]?.dataUrl}
+                        src={product.media?.[0]?.dataUrl}
                         alt={product.title}
                         className="w-full h-80 object-cover group-hover:scale-110 transition-transform duration-500"
                       />
@@ -158,7 +147,7 @@ export function Gallery({ onAdminClick }: GalleryProps) {
                   transition={{ duration: 0.5, delay: index * 0.1 }}
                   className="rounded-2xl overflow-hidden shadow-lg border border-purple-100"
                 >
-                  <video src={product.media.find((item) => item.type === 'video')?.dataUrl} controls className="w-full h-56 object-cover bg-black" />
+                  <video src={product.media?.find((item) => item.type === 'video')?.dataUrl} controls className="w-full h-56 object-cover bg-black" />
                   {product.description && (
                     <div className="px-4 py-2 bg-gradient-to-r from-fuchsia-50 to-purple-50">
                       <p className="text-sm text-gray-600">{product.description}</p>

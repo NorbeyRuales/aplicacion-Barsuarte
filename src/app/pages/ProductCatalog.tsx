@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { motion } from 'motion/react';
 import { ShoppingBag, Search, Filter, Heart, MessageCircle, Image, Video, X } from 'lucide-react';
 import { useOutletContext } from 'react-router';
-import { loadMedia, groupMediaByProduct, type ProductItem } from '../components/AdminPanel';
+import { useSupabaseProducts } from '../../hooks/useSupabase';
+import { type Product, type ProductMedia } from '../../services/supabase';
 
 interface Client {
   id: string;
@@ -29,24 +30,11 @@ const categoryLabels: Record<string, string> = {
 export function ProductCatalog() {
   const { client } = useOutletContext<OutletContext>();
   const navigate = useNavigate();
-  const [products, setProducts] = useState<ProductItem[]>([]);
+  const { products, loading } = useSupabaseProducts();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [favorites, setFavorites] = useState<string[]>([]);
-  const [selectedProduct, setSelectedProduct] = useState<ProductItem | null>(null);
-
-  useEffect(() => {
-    const refresh = () => {
-      setProducts(groupMediaByProduct(loadMedia()));
-    };
-    refresh();
-    window.addEventListener('storage', refresh);
-    const interval = setInterval(refresh, 2000);
-    return () => {
-      window.removeEventListener('storage', refresh);
-      clearInterval(interval);
-    };
-  }, []);
+  const [selectedProduct, setSelectedProduct] = useState<(Product & { media?: ProductMedia[] }) | null>(null);
 
   useEffect(() => {
     const saved = localStorage.getItem(`favorites_${client.id}`);
@@ -61,14 +49,14 @@ export function ProductCatalog() {
     localStorage.setItem(`favorites_${client.id}`, JSON.stringify(newFavorites));
   };
 
-  const filteredProducts = products.filter((p) => {
+  const filteredProducts = (products as (Product & { media?: ProductMedia[] })[]).filter((p) => {
     const text = `${p.title} ${p.description}`.toLowerCase();
     const matchesSearch = text.includes(searchTerm.toLowerCase());
     const matchesCategory = selectedCategory === 'all' || p.category === selectedCategory;
     return matchesSearch && matchesCategory;
   });
 
-  const openMessageFlow = (product: ProductItem) => {
+  const openMessageFlow = (product: Product & { media?: ProductMedia[] }) => {
     const savedClient = localStorage.getItem('barsuarte_current_client');
     if (!savedClient) {
       navigate('/clientes', { replace: true });
@@ -184,14 +172,14 @@ export function ProductCatalog() {
                   setSelectedProduct(product);
                 }}
               >
-                {product.media[0]?.type === 'video' ? (
+                {product.media?.[0]?.type === 'video' ? (
                   <video
-                    src={product.media[0].dataUrl}
+                    src={product.media?.[0]?.dataUrl}
                     className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                   />
                 ) : (
                   <img
-                    src={product.media[0]?.dataUrl}
+                    src={product.media?.[0]?.dataUrl}
                     alt={product.title}
                     className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                   />

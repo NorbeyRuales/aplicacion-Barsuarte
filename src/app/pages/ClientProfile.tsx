@@ -2,22 +2,12 @@ import { useState, useEffect } from 'react';
 import { useOutletContext, useNavigate } from 'react-router';
 import { motion } from 'motion/react';
 import { User, Trash, Check } from 'lucide-react';
-
-interface Client {
-  id: string;
-  name: string;
-  surname: string;
-  email: string;
-  phone: string;
-  password: string;
-  createdAt: string;
-}
+import { clientsService, type Client as SupabaseClient } from '../../services/supabase';
 
 interface OutletContext {
-  client: Client;
+  client: SupabaseClient;
 }
 
-const CLIENTS_KEY = 'barsuarte_clients';
 const CURRENT_CLIENT_KEY = 'barsuarte_current_client';
 
 export function ClientProfile() {
@@ -26,7 +16,7 @@ export function ClientProfile() {
   const [name, setName] = useState(client?.name || '');
   const [surname, setSurname] = useState('');
   const [email, setEmail] = useState(client?.email || '');
-  const [phone, setPhone] = useState('');
+  const [phone, setPhone] = useState(client?.phone || '');
   const [password, setPassword] = useState(client?.password || '');
   const [success, setSuccess] = useState('');
 
@@ -38,37 +28,38 @@ export function ClientProfile() {
     setPassword(client?.password || '');
   }, [client]);
 
-  const getClients = () => {
-    try {
-      const data = localStorage.getItem(CLIENTS_KEY);
-      return data ? JSON.parse(data) : [];
-    } catch {
-      return [];
-    }
-  };
-
-  const saveClients = (arr: any[]) => {
-    localStorage.setItem(CLIENTS_KEY, JSON.stringify(arr));
-  };
-
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    const all = getClients();
-    const updated = all.map((c: Client) =>
-      c.id === client.id ? { ...c, name, surname, email, phone, password } : c
-    );
-    saveClients(updated);
-    const updatedClient = { ...client, name, surname, email, phone, password };
+
+    const updatedClient = await clientsService.update(client.id, {
+      name,
+      surname,
+      email,
+      phone,
+      password,
+    });
+
+    if (!updatedClient) {
+      setSuccess('No se pudo actualizar el perfil. Intenta de nuevo.');
+      setTimeout(() => setSuccess(''), 3000);
+      return;
+    }
+
     localStorage.setItem(CURRENT_CLIENT_KEY, JSON.stringify(updatedClient));
     setSuccess('Perfil actualizado correctamente');
     setTimeout(() => setSuccess(''), 3000);
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!confirm('¿Eliminar tu cuenta? Esta acción no se puede deshacer.')) return;
-    const all = getClients();
-    const updated = all.filter((c: Client) => c.id !== client.id);
-    saveClients(updated);
+
+    const deleted = await clientsService.delete(client.id);
+    if (!deleted) {
+      setSuccess('No se pudo eliminar la cuenta. Intenta de nuevo.');
+      setTimeout(() => setSuccess(''), 3000);
+      return;
+    }
+
     localStorage.removeItem(CURRENT_CLIENT_KEY);
     navigate('/clientes');
   };

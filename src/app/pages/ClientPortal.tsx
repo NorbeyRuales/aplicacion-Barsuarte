@@ -2,19 +2,9 @@ import { useState, useEffect } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
 import { User, Lock, ShoppingBag, MessageSquare, LogOut, Home, Eye, EyeOff } from 'lucide-react';
+import { clientsService, type Client } from '../../services/supabase';
 
-const CLIENTS_KEY = 'barsuarte_clients';
 const CURRENT_CLIENT_KEY = 'barsuarte_current_client';
-
-interface Client {
-  id: string;
-  name: string;
-  surname: string;
-  email: string;
-  phone: string;
-  password: string;
-  createdAt: string;
-}
 
 export function ClientPortal() {
   const navigate = useNavigate();
@@ -48,35 +38,23 @@ export function ClientPortal() {
     }
   }, [isLoggedIn, location.pathname, navigate]);
 
-  const getClients = (): Client[] => {
-    const data = localStorage.getItem(CLIENTS_KEY);
-    return data ? JSON.parse(data) : [];
-  };
-
-  const saveClients = (clients: Client[]) => {
-    localStorage.setItem(CLIENTS_KEY, JSON.stringify(clients));
-  };
-
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
-    const clients = getClients();
-    const client = clients.find(
-      (c) => c.email === loginEmail && c.password === loginPassword
-    );
-
-    if (client) {
-      setCurrentClient(client);
-      setIsLoggedIn(true);
-      localStorage.setItem(CURRENT_CLIENT_KEY, JSON.stringify(client));
-      navigate('/clientes/productos');
-    } else {
+    const client = await clientsService.getByEmail(loginEmail);
+    if (!client || client.password !== loginPassword) {
       setError('Correo o contraseña incorrectos');
+      return;
     }
+
+    setCurrentClient(client);
+    setIsLoggedIn(true);
+    localStorage.setItem(CURRENT_CLIENT_KEY, JSON.stringify(client));
+    navigate('/clientes/productos');
   };
 
-  const handleRegister = (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
@@ -85,24 +63,25 @@ export function ClientPortal() {
       return;
     }
 
-    const clients = getClients();
-
-    if (clients.find((c) => c.email === registerEmail)) {
+    const existingClient = await clientsService.getByEmail(registerEmail);
+    if (existingClient) {
       setError('Este correo ya está registrado');
       return;
     }
 
-    const newClient: Client = {
-      id: Date.now().toString(),
+    const newClient = await clientsService.create({
       name: registerName,
       surname: registerSurname,
       email: registerEmail,
       phone: registerPhone,
       password: registerPassword,
-      createdAt: new Date().toISOString(),
-    };
+    });
 
-    saveClients([...clients, newClient]);
+    if (!newClient) {
+      setError('No se pudo crear la cuenta. Intenta de nuevo.');
+      return;
+    }
+
     setCurrentClient(newClient);
     setIsLoggedIn(true);
     localStorage.setItem(CURRENT_CLIENT_KEY, JSON.stringify(newClient));
@@ -283,7 +262,6 @@ export function ClientPortal() {
                       value={registerEmail}
                       onChange={(e) => setRegisterEmail(e.target.value)}
                       placeholder="tu@email.com"
-                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-fuchsia-500 focus:border-transparent outline-none transition-all"
                       className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-fuchsia-500 focus:border-transparent outline-none transition-all"
                       required
                     />
