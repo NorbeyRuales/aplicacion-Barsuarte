@@ -211,8 +211,11 @@ export function useSupabaseStories(options?: { approvedOnly?: boolean; clientId?
   const [stories, setStories] = useState<EntrepreneurStory[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const loadStories = async () => {
-    setLoading(true);
+  const loadStories = async (showLoading = false) => {
+    if (showLoading) {
+      setLoading(true);
+    }
+
     const data = options?.clientId
       ? await storiesService.getByClientId(options.clientId)
       : options?.approvedOnly
@@ -223,8 +226,8 @@ export function useSupabaseStories(options?: { approvedOnly?: boolean; clientId?
   };
 
   useEffect(() => {
-    loadStories();
-    const interval = setInterval(loadStories, 3000);
+    loadStories(true);
+    const interval = setInterval(() => loadStories(false), 3000);
     return () => clearInterval(interval);
   }, [options?.approvedOnly, options?.clientId]);
 
