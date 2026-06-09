@@ -42,7 +42,8 @@ export function ClientPortal() {
     e.preventDefault();
     setError('');
 
-    const client = await clientsService.getByEmail(loginEmail);
+    const email = loginEmail.trim().toLowerCase();
+    const client = await clientsService.getByEmail(email);
     if (!client || client.password !== loginPassword) {
       setError('Correo o contraseña incorrectos');
       return;
@@ -57,23 +58,24 @@ export function ClientPortal() {
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    const email = registerEmail.trim().toLowerCase();
 
-    if (!registerName || !registerSurname || !registerEmail || !registerPhone || !registerPassword) {
+    if (!registerName || !registerSurname || !email || !registerPhone || !registerPassword) {
       setError('Todos los campos son obligatorios');
       return;
     }
 
-    const existingClient = await clientsService.getByEmail(registerEmail);
+    const existingClient = await clientsService.getByEmail(email);
     if (existingClient) {
       setError('Este correo ya está registrado');
       return;
     }
 
     const newClient = await clientsService.create({
-      name: registerName,
-      surname: registerSurname,
-      email: registerEmail,
-      phone: registerPhone,
+      name: registerName.trim(),
+      surname: registerSurname.trim(),
+      email,
+      phone: registerPhone.trim(),
       password: registerPassword,
     });
 

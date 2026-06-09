@@ -329,25 +329,27 @@ export function AdminPanel({ isOpen, onClose, onAuthChange }: AdminPanelProps) {
   const handleLogin = () => {
     (async () => {
       try {
-        if (!loginEmail || !loginPassword) {
+        const email = loginEmail.trim().toLowerCase();
+
+        if (!email || !loginPassword) {
           setLoginError('Correo y contraseña son requeridos');
           return;
         }
 
-        const client = await clientsService.getByEmail(loginEmail);
+        const client = await clientsService.getByEmail(email);
         if (!client || client.password !== loginPassword) {
           setLoginError('Correo o contraseña incorrectos');
           return;
         }
 
-        const admin = await adminsService.getByEmail(loginEmail);
+        const admin = await adminsService.getByEmail(email);
         if (!admin) {
           setLoginError('Este usuario no está autorizado como administrador');
           return;
         }
 
         setAuthenticated(true);
-        localStorage.setItem(SESSION_KEY, loginEmail);
+        localStorage.setItem(SESSION_KEY, email);
         setLoginError('');
         setLoginEmail('');
         setLoginPassword('');
@@ -365,22 +367,24 @@ export function AdminPanel({ isOpen, onClose, onAuthChange }: AdminPanelProps) {
   };
 
   const handleRegisterAdmin = async () => {
-    if (!adminRegName || !adminRegSurname || !adminRegEmail || !adminRegPhone || !adminRegPassword) {
+    const email = adminRegEmail.trim().toLowerCase();
+
+    if (!adminRegName || !adminRegSurname || !email || !adminRegPhone || !adminRegPassword) {
       showToast('Completa todos los campos para registrar administrador', 'err');
       return;
     }
 
-    const exists = clients.some((client) => client.email === adminRegEmail) || (await clientsService.getByEmail(adminRegEmail) !== null);
+    const exists = clients.some((client) => client.email.toLowerCase() === email) || (await clientsService.getByEmail(email) !== null);
     if (exists) {
       showToast('El correo ya está registrado', 'err');
       return;
     }
 
     const createdClient = await clientsService.create({
-      name: adminRegName,
-      surname: adminRegSurname,
-      email: adminRegEmail,
-      phone: adminRegPhone,
+      name: adminRegName.trim(),
+      surname: adminRegSurname.trim(),
+      email,
+      phone: adminRegPhone.trim(),
       password: adminRegPassword,
     });
 
@@ -392,12 +396,13 @@ export function AdminPanel({ isOpen, onClose, onAuthChange }: AdminPanelProps) {
     // create admin row in DB linked to the client
     const createdAdmin = await adminsService.create(createdClient.id, createdClient.email);
     if (!createdAdmin) {
-      showToast('No se pudo crear el registro de administrador en la base de datos', 'err');
+      await clientsService.delete(createdClient.id);
+      showToast('No se pudo crear el registro de administrador. Ejecuta SUPABASE_FIX_RLS.sql en Supabase.', 'err');
       return;
     }
 
     setAuthenticated(true);
-    localStorage.setItem(SESSION_KEY, adminRegEmail);
+    localStorage.setItem(SESSION_KEY, email);
     showToast('Administrador registrado e ingresado correctamente');
 
     // reset
@@ -589,22 +594,24 @@ export function AdminPanel({ isOpen, onClose, onAuthChange }: AdminPanelProps) {
   };
 
   const handleCreateClient = async () => {
-    if (!newClientName || !newClientSurname || !newClientEmail || !newClientPhone || !newClientPassword) {
+    const email = newClientEmail.trim().toLowerCase();
+
+    if (!newClientName || !newClientSurname || !email || !newClientPhone || !newClientPassword) {
       showToast('Completa todos los campos', 'err');
       return;
     }
 
-    const exists = clients.some((client) => client.email === newClientEmail);
+    const exists = clients.some((client) => client.email.toLowerCase() === email) || (await clientsService.getByEmail(email) !== null);
     if (exists) {
       showToast('El correo ya está registrado', 'err');
       return;
     }
 
     const createdClient = await clientsService.create({
-      name: newClientName,
-      surname: newClientSurname,
-      email: newClientEmail,
-      phone: newClientPhone,
+      name: newClientName.trim(),
+      surname: newClientSurname.trim(),
+      email,
+      phone: newClientPhone.trim(),
       password: newClientPassword,
     });
 

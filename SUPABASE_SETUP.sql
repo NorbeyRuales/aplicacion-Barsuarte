@@ -82,9 +82,10 @@ CREATE INDEX IF NOT EXISTS idx_admins_email ON admins(email);
 -- Habilitar RLS para admins
 ALTER TABLE admins ENABLE ROW LEVEL SECURITY;
 
--- Políticas de RLS para admins: solo permitir lectura pública (los checks de auth se realizarán a nivel de aplicación)
+-- Políticas de RLS para admins: permitir registro y lectura desde la app pública
+DROP POLICY IF EXISTS "Admins publicos" ON admins;
 DROP POLICY IF EXISTS "Admins públicas" ON admins;
-CREATE POLICY "Admins públicas"
+CREATE POLICY "Admins publicos"
   ON admins FOR SELECT
   USING (true);
 
@@ -180,3 +181,9 @@ DROP POLICY IF EXISTS "Admins pueden ser eliminados" ON admins;
 CREATE POLICY "Admins pueden ser eliminados"
   ON admins FOR DELETE
   USING (true);
+
+GRANT SELECT, INSERT, UPDATE, DELETE ON clients TO anon, authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON products TO anon, authenticated;
+GRANT SELECT, INSERT, DELETE ON product_media TO anon, authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON messages TO anon, authenticated;
+GRANT SELECT, INSERT, DELETE ON admins TO anon, authenticated;
