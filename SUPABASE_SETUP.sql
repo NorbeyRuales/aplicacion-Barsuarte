@@ -144,6 +144,12 @@ CREATE POLICY "Media puede ser insertada"
   ON product_media FOR INSERT
   WITH CHECK (true);
 
+DROP POLICY IF EXISTS "Media puede ser actualizada" ON product_media;
+CREATE POLICY "Media puede ser actualizada"
+  ON product_media FOR UPDATE
+  USING (true)
+  WITH CHECK (true);
+
 DROP POLICY IF EXISTS "Media puede ser eliminada" ON product_media;
 CREATE POLICY "Media puede ser eliminada"
   ON product_media FOR DELETE
@@ -184,6 +190,40 @@ CREATE POLICY "Admins pueden ser eliminados"
 
 GRANT SELECT, INSERT, UPDATE, DELETE ON clients TO anon, authenticated;
 GRANT SELECT, INSERT, UPDATE, DELETE ON products TO anon, authenticated;
-GRANT SELECT, INSERT, DELETE ON product_media TO anon, authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON product_media TO anon, authenticated;
 GRANT SELECT, INSERT, UPDATE, DELETE ON messages TO anon, authenticated;
 GRANT SELECT, INSERT, DELETE ON admins TO anon, authenticated;
+
+INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+VALUES (
+  'product-media',
+  'product-media',
+  true,
+  52428800,
+  ARRAY['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'video/mp4', 'video/webm', 'video/quicktime']
+)
+ON CONFLICT (id) DO UPDATE SET
+  public = EXCLUDED.public,
+  file_size_limit = EXCLUDED.file_size_limit,
+  allowed_mime_types = EXCLUDED.allowed_mime_types;
+
+DROP POLICY IF EXISTS "Product media files are public" ON storage.objects;
+CREATE POLICY "Product media files are public"
+  ON storage.objects FOR SELECT
+  USING (bucket_id = 'product-media');
+
+DROP POLICY IF EXISTS "Product media files can be uploaded" ON storage.objects;
+CREATE POLICY "Product media files can be uploaded"
+  ON storage.objects FOR INSERT
+  WITH CHECK (bucket_id = 'product-media');
+
+DROP POLICY IF EXISTS "Product media files can be updated" ON storage.objects;
+CREATE POLICY "Product media files can be updated"
+  ON storage.objects FOR UPDATE
+  USING (bucket_id = 'product-media')
+  WITH CHECK (bucket_id = 'product-media');
+
+DROP POLICY IF EXISTS "Product media files can be deleted" ON storage.objects;
+CREATE POLICY "Product media files can be deleted"
+  ON storage.objects FOR DELETE
+  USING (bucket_id = 'product-media');

@@ -13,6 +13,36 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 export const STORAGE_BUCKET = 'product-media';
 
+function getStoragePathFromPublicUrl(url: string): string | null {
+  if (!url || url.startsWith('data:')) return null;
+
+  const marker = `/storage/v1/object/public/${STORAGE_BUCKET}/`;
+  const markerIndex = url.indexOf(marker);
+  if (markerIndex === -1) return null;
+
+  const pathWithQuery = url.slice(markerIndex + marker.length);
+  const path = pathWithQuery.split('?')[0];
+
+  try {
+    return decodeURIComponent(path);
+  } catch {
+    return path;
+  }
+}
+
+async function deleteFilesFromStorage(urls: string[]): Promise<void> {
+  const paths = Array.from(
+    new Set(urls.map(getStoragePathFromPublicUrl).filter((path): path is string => Boolean(path)))
+  );
+
+  if (paths.length === 0) return;
+
+  const { error } = await supabase.storage.from(STORAGE_BUCKET).remove(paths);
+  if (error) {
+    console.error('Error deleting files from Supabase Storage:', error);
+  }
+}
+
 export async function uploadFileToStorage(file: File): Promise<string | null> {
   const sanitizedFilename = file.name.replace(/[^a-zA-Z0-9_.-]/g, '_');
   const filePath = `products/${Date.now()}-${Math.random().toString(36).slice(2)}-${sanitizedFilename}`;
@@ -348,6 +378,11 @@ export const productsService = {
       }
     }
 
+    if (mediaItems.length > 0 && createdMedia.length !== mediaItems.length) {
+      await this.delete(createdProduct.id);
+      return null;
+    }
+
     return { ...createdProduct, media: createdMedia };
   },
 
@@ -377,6 +412,18 @@ export const productsService = {
   },
 
   async delete(id: string): Promise<boolean> {
+    const { data: mediaRows, error: mediaFetchError } = await supabase
+      .from('product_media')
+      .select('data_url')
+      .eq('product_id', id);
+
+    if (mediaFetchError) {
+      console.error('Error fetching media before product delete:', mediaFetchError);
+      return false;
+    }
+
+    await deleteFilesFromStorage((mediaRows || []).map((row) => row.data_url));
+
     // Primero eliminar media
     const { error: mediaError } = await supabase
       .from('product_media')
@@ -426,6 +473,19 @@ export const mediaService = {
   },
 
   async deleteMedia(mediaId: string): Promise<boolean> {
+    const { data: mediaRow, error: fetchError } = await supabase
+      .from('product_media')
+      .select('data_url')
+      .eq('id', mediaId)
+      .single();
+
+    if (fetchError) {
+      console.error('Error fetching media before delete:', fetchError);
+      return false;
+    }
+
+    await deleteFilesFromStorage(mediaRow ? [mediaRow.data_url] : []);
+
     const { error } = await supabase
       .from('product_media')
       .delete()
