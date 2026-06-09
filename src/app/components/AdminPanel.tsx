@@ -328,28 +328,29 @@ export function AdminPanel({ isOpen, onClose, onAuthChange }: AdminPanelProps) {
 
   const handleLogin = () => {
     (async () => {
-      if (!loginEmail || !loginPassword) {
-        setLoginError('Correo y contraseña son requeridos');
-        return;
-      }
+      try {
+        if (!loginEmail || !loginPassword) {
+          setLoginError('Correo y contraseña son requeridos');
+          return;
+        }
 
-          const client = await clientsService.getByEmail(loginEmail);
-          if (!client || client.password !== loginPassword) {
-            setLoginError('Correo o contraseña incorrectos');
-            return;
-          }
+        const client = await clientsService.getByEmail(loginEmail);
+        if (!client || client.password !== loginPassword) {
+          setLoginError('Correo o contraseña incorrectos');
+          return;
+        }
 
-          const admin = await adminsService.getByEmail(loginEmail);
-          if (!admin) {
-            setLoginError('Este usuario no está autorizado como administrador');
-            return;
-          }
+        const admin = await adminsService.getByEmail(loginEmail);
+        if (!admin) {
+          setLoginError('Este usuario no está autorizado como administrador');
+          return;
+        }
 
-          setAuthenticated(true);
-          localStorage.setItem(SESSION_KEY, loginEmail);
-          setLoginError('');
-          setLoginEmail('');
-          setLoginPassword('');
+        setAuthenticated(true);
+        localStorage.setItem(SESSION_KEY, loginEmail);
+        setLoginError('');
+        setLoginEmail('');
+        setLoginPassword('');
       } catch (err) {
         console.error('Error during admin login:', err);
         setLoginError('Error de autenticación');
