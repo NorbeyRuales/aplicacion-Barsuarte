@@ -1,13 +1,37 @@
 import { createClient } from '@supabase/supabase-js';
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || import.meta.env.NEXT_PUBLIC_SUPABASE_URL || 'https://lqwyfufwugxupqpyzcgn.supabase.co';
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || import.meta.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || 'sb_publishable__t-_6R6E8Py2bhx65_RrnA_uuhPC724';
+const env = ((import.meta as unknown) as { env?: Record<string, string | undefined> }).env ?? {};
+
+const SUPABASE_URL = env.VITE_SUPABASE_URL || env.NEXT_PUBLIC_SUPABASE_URL || 'https://lqwyfufwugxupqpyzcgn.supabase.co';
+const SUPABASE_ANON_KEY = env.VITE_SUPABASE_ANON_KEY || env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || 'sb_publishable__t-_6R6E8Py2bhx65_RrnA_uuhPC724';
 
 if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
   throw new Error('Las credenciales de Supabase no están configuradas. Revisa tu archivo .env.local');
 }
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+export const STORAGE_BUCKET = 'product-media';
+
+export async function uploadFileToStorage(file: File): Promise<string | null> {
+  const sanitizedFilename = file.name.replace(/[^a-zA-Z0-9_.-]/g, '_');
+  const filePath = `products/${Date.now()}-${Math.random().toString(36).slice(2)}-${sanitizedFilename}`;
+
+  const { error: uploadError } = await supabase.storage
+    .from(STORAGE_BUCKET)
+    .upload(filePath, file, { cacheControl: '3600', upsert: true });
+
+  if (uploadError) {
+    console.error('Error uploading file to Supabase Storage:', uploadError);
+    return null;
+  }
+
+  const publicUrlResult = supabase.storage
+    .from(STORAGE_BUCKET)
+    .getPublicUrl(filePath);
+
+  return publicUrlResult.data.publicUrl;
+}
 
 // ==================== CLIENTES ====================
 export interface Client {
@@ -65,6 +89,78 @@ const mapMessageRow = (row: any): Message => ({
   adminResponse: row.admin_response || '',
   respondedAt: row.responded_at || undefined,
 });
+
+// ==================== ADMINS ====================
+export interface Admin {
+  id: string;
+  clientId: string;
+  email: string;
+  createdAt: string;
+}
+
+const mapAdminRow = (row: any): Admin => ({
+  id: row.id,
+  clientId: row.client_id,
+  email: row.email,
+  createdAt: row.created_at,
+});
+
+export const adminsService = {
+  async getAll(): Promise<Admin[]> {
+    const { data, error } = await supabase
+      .from('admins')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching admins:', error);
+      return [];
+    }
+    return (data || []).map(mapAdminRow);
+  },
+
+  async getByEmail(email: string): Promise<Admin | null> {
+    const { data, error } = await supabase
+      .from('admins')
+      .select('*')
+      .eq('email', email)
+      .single();
+
+    if (error) {
+      if (!data) return null;
+      console.error('Error fetching admin:', error);
+      return null;
+    }
+    return data ? mapAdminRow(data) : null;
+  },
+
+  async create(clientId: string, email: string): Promise<Admin | null> {
+    const { data, error } = await supabase
+      .from('admins')
+      .insert([{ client_id: clientId, email, created_at: new Date().toISOString() }])
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error creating admin:', error);
+      return null;
+    }
+    return data ? mapAdminRow(data) : null;
+  },
+
+  async delete(id: string): Promise<boolean> {
+    const { error } = await supabase
+      .from('admins')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      console.error('Error deleting admin:', error);
+      return false;
+    }
+    return true;
+  },
+};
 
 export const clientsService = {
   async getAll(): Promise<Client[]> {
@@ -413,9 +509,20 @@ export const messagesService = {
   },
 
   async create(message: Omit<Message, 'id' | 'createdAt'>): Promise<Message | null> {
+    const row = {
+      client_id: message.clientId,
+      client_name: message.clientName,
+      subject: message.subject,
+      message: message.message,
+      status: message.status,
+      admin_response: message.adminResponse || null,
+      responded_at: message.respondedAt || null,
+      created_at: new Date().toISOString(),
+    };
+
     const { data, error } = await supabase
       .from('messages')
-      .insert([{ ...message, created_at: new Date().toISOString() }])
+      .insert([row])
       .select()
       .single();
     

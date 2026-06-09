@@ -25,13 +25,15 @@ import {
   productsService,
   mediaService,
   messagesService,
+  adminsService,
+  uploadFileToStorage,
   type Client,
   type Product,
   type ProductMedia,
   type Message,
 } from '../../services/supabase';
 
-const ADMIN_PASSWORD = 'barsuarte2024';
+const ADMINS_KEY = 'barsuarte_admins';
 const PRODUCTS_KEY = 'barsuarte_products';
 const LEGACY_MEDIA_KEY = 'barsuarte_media';
 const SESSION_KEY = 'barsuarte_admin_session';
@@ -255,11 +257,14 @@ function saveProducts(items: ProductItem[]) {
 }
 
 export function isAdminSession(): boolean {
-  return localStorage.getItem(SESSION_KEY) === 'true';
+  return Boolean(localStorage.getItem(SESSION_KEY));
 }
 
 export function AdminPanel({ isOpen, onClose, onAuthChange }: AdminPanelProps) {
   const [authenticated, setAuthenticated] = useState(isAdminSession);
+  const [loginEmail, setLoginEmail] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+  const [showRegister, setShowRegister] = useState(false);
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loginError, setLoginError] = useState('');
@@ -278,6 +283,11 @@ export function AdminPanel({ isOpen, onClose, onAuthChange }: AdminPanelProps) {
   const [newClientEmail, setNewClientEmail] = useState('');
   const [newClientPhone, setNewClientPhone] = useState('');
   const [newClientPassword, setNewClientPassword] = useState('');
+  const [adminRegName, setAdminRegName] = useState('');
+  const [adminRegSurname, setAdminRegSurname] = useState('');
+  const [adminRegEmail, setAdminRegEmail] = useState('');
+  const [adminRegPhone, setAdminRegPhone] = useState('');
+  const [adminRegPassword, setAdminRegPassword] = useState('');
   const imageInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -317,21 +327,85 @@ export function AdminPanel({ isOpen, onClose, onAuthChange }: AdminPanelProps) {
   };
 
   const handleLogin = () => {
-    if (password === ADMIN_PASSWORD) {
-      setAuthenticated(true);
-      localStorage.setItem(SESSION_KEY, 'true');
-      setLoginError('');
-      setPassword('');
-      return;
-    }
+    (async () => {
+      if (!loginEmail || !loginPassword) {
+        setLoginError('Correo y contraseña son requeridos');
+        return;
+      }
 
-    setLoginError('Contraseña incorrecta. Inténtalo de nuevo.');
+          const client = await clientsService.getByEmail(loginEmail);
+          if (!client || client.password !== loginPassword) {
+            setLoginError('Correo o contraseña incorrectos');
+            return;
+          }
+
+          const admin = await adminsService.getByEmail(loginEmail);
+          if (!admin) {
+            setLoginError('Este usuario no está autorizado como administrador');
+            return;
+          }
+
+          setAuthenticated(true);
+          localStorage.setItem(SESSION_KEY, loginEmail);
+          setLoginError('');
+          setLoginEmail('');
+          setLoginPassword('');
+      } catch (err) {
+        console.error('Error during admin login:', err);
+        setLoginError('Error de autenticación');
+      }
+    })();
   };
 
   const handleLogout = () => {
     setAuthenticated(false);
     localStorage.removeItem(SESSION_KEY);
     onClose();
+  };
+
+  const handleRegisterAdmin = async () => {
+    if (!adminRegName || !adminRegSurname || !adminRegEmail || !adminRegPhone || !adminRegPassword) {
+      showToast('Completa todos los campos para registrar administrador', 'err');
+      return;
+    }
+
+    const exists = clients.some((client) => client.email === adminRegEmail) || (await clientsService.getByEmail(adminRegEmail) !== null);
+    if (exists) {
+      showToast('El correo ya está registrado', 'err');
+      return;
+    }
+
+    const createdClient = await clientsService.create({
+      name: adminRegName,
+      surname: adminRegSurname,
+      email: adminRegEmail,
+      phone: adminRegPhone,
+      password: adminRegPassword,
+    });
+
+    if (!createdClient) {
+      showToast('No se pudo crear el administrador', 'err');
+      return;
+    }
+
+    // create admin row in DB linked to the client
+    const createdAdmin = await adminsService.create(createdClient.id, createdClient.email);
+    if (!createdAdmin) {
+      showToast('No se pudo crear el registro de administrador en la base de datos', 'err');
+      return;
+    }
+
+    setAuthenticated(true);
+    localStorage.setItem(SESSION_KEY, adminRegEmail);
+    showToast('Administrador registrado e ingresado correctamente');
+
+    // reset
+    setAdminRegName('');
+    setAdminRegSurname('');
+    setAdminRegEmail('');
+    setAdminRegPhone('');
+    setAdminRegPassword('');
+    setShowRegister(false);
   };
 
   const resetProductForm = () => {
@@ -348,26 +422,55 @@ export function AdminPanel({ isOpen, onClose, onAuthChange }: AdminPanelProps) {
     setSelectedFiles((prev) => [...prev, ...Array.from(files)]);
   };
 
-  const createMediaItems = (files: File[], productId: string) =>
-    Promise.all(
-      files.map(
-        (file) =>
-          new Promise<ProductMediaItem>((resolve) => {
-            const reader = new FileReader();
-            reader.onload = (event) => {
-              resolve({
-                id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
-                productId,
-                type: file.type.startsWith('video/') ? 'video' : 'image',
-                dataUrl: event.target?.result as string,
-                name: file.name,
-                uploadedAt: new Date().toISOString(),
-              });
-            };
-            reader.readAsDataURL(file);
-          })
-      )
+  const readFileAsDataUrl = (file: File) =>
+    new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const result = event.target?.result;
+        if (typeof result === 'string') {
+          resolve(result);
+        } else {
+          reject(new Error('No se pudo leer el archivo'));
+        }
+      };
+      reader.onerror = () => reject(new Error('Error leyendo archivo'));
+      reader.readAsDataURL(file);
+    });
+
+  const createMediaItems = async (files: File[], productId: string) => {
+    const failedUploads: string[] = [];
+    const items = await Promise.all(
+      files.map(async (file) => {
+        let storageUrl: string | null = null;
+        try {
+          storageUrl = await uploadFileToStorage(file);
+        } catch (err) {
+          console.error('Error during uploadFileToStorage:', err);
+          storageUrl = null;
+        }
+
+        const dataUrl = storageUrl ?? (await readFileAsDataUrl(file));
+
+        if (!storageUrl) failedUploads.push(file.name);
+
+        return {
+          id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+          productId,
+          type: file.type.startsWith('video/') ? 'video' : 'image',
+          dataUrl,
+          name: file.name,
+          uploadedAt: new Date().toISOString(),
+        };
+      })
     );
+
+    if (failedUploads.length > 0) {
+      showToast(`No se pudieron subir ${failedUploads.length} archivo(s) al bucket: ${failedUploads.join(', ')}`, 'err');
+      console.warn('Failed uploads:', failedUploads);
+    }
+
+    return items;
+  };
 
   const refreshData = async () => {
     try {
@@ -604,39 +707,65 @@ export function AdminPanel({ isOpen, onClose, onAuthChange }: AdminPanelProps) {
                   </div>
 
                   <div className="space-y-4">
-                    <div className="relative">
-                      <input
-                        type={showPassword ? 'text' : 'password'}
-                        placeholder="Contraseña de administrador"
-                        value={password}
-                        onChange={(event) => {
-                          setPassword(event.target.value);
-                          setLoginError('');
-                        }}
-                        onKeyDown={(event) => event.key === 'Enter' && handleLogin()}
-                        className="w-full px-4 py-3 pr-12 border-2 border-gray-200 rounded-xl focus:border-fuchsia-400 focus:outline-none transition-colors"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword((value) => !value)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                      >
-                        {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                      </button>
-                    </div>
+                    {!showRegister ? (
+                      <>
+                        <input
+                          type="email"
+                          placeholder="Correo electrónico"
+                          value={loginEmail}
+                          onChange={(e) => { setLoginEmail(e.target.value); setLoginError(''); }}
+                          className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-fuchsia-400 focus:outline-none transition-colors"
+                        />
+                        <div className="relative">
+                          <input
+                            type={showPassword ? 'text' : 'password'}
+                            placeholder="Contraseña"
+                            value={loginPassword}
+                            onChange={(event) => { setLoginPassword(event.target.value); setLoginError(''); }}
+                            onKeyDown={(event) => event.key === 'Enter' && handleLogin()}
+                            className="w-full px-4 py-3 pr-12 border-2 border-gray-200 rounded-xl focus:border-fuchsia-400 focus:outline-none transition-colors"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowPassword((value) => !value)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                          >
+                            {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                          </button>
+                        </div>
 
-                    {loginError && (
-                      <p className="text-red-500 text-sm flex items-center gap-1">
-                        <AlertCircle className="w-4 h-4" /> {loginError}
-                      </p>
+                        {loginError && (
+                          <p className="text-red-500 text-sm flex items-center gap-1">
+                            <AlertCircle className="w-4 h-4" /> {loginError}
+                          </p>
+                        )}
+
+                        <button
+                          onClick={handleLogin}
+                          className="w-full py-3 bg-gradient-to-r from-fuchsia-600 to-purple-600 hover:from-fuchsia-700 hover:to-purple-700 text-white rounded-xl font-bold transition-all duration-200 shadow-lg shadow-fuchsia-200"
+                        >
+                          Ingresar
+                        </button>
+
+                        <div className="text-center text-sm text-gray-500 mt-2">
+                          ¿No tienes una cuenta de administrador?{' '}
+                          <button onClick={() => setShowRegister(true)} className="text-fuchsia-600 underline">Regístrate</button>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="space-y-3">
+                        <input value={adminRegName} onChange={(e) => setAdminRegName(e.target.value)} placeholder="Nombre" className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl" />
+                        <input value={adminRegSurname} onChange={(e) => setAdminRegSurname(e.target.value)} placeholder="Apellido" className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl" />
+                        <input value={adminRegEmail} onChange={(e) => setAdminRegEmail(e.target.value)} placeholder="Correo electrónico" className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl" />
+                        <input value={adminRegPhone} onChange={(e) => setAdminRegPhone(e.target.value)} placeholder="Teléfono" className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl" />
+                        <input value={adminRegPassword} onChange={(e) => setAdminRegPassword(e.target.value)} placeholder="Contraseña" type={showPassword ? 'text' : 'password'} className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl" />
+
+                        <div className="flex gap-2">
+                          <button onClick={handleRegisterAdmin} className="flex-1 py-3 bg-green-600 text-white rounded-xl">Registrar admin</button>
+                          <button onClick={() => setShowRegister(false)} className="px-4 py-3 border rounded-xl">Cancelar</button>
+                        </div>
+                      </div>
                     )}
-
-                    <button
-                      onClick={handleLogin}
-                      className="w-full py-3 bg-gradient-to-r from-fuchsia-600 to-purple-600 hover:from-fuchsia-700 hover:to-purple-700 text-white rounded-xl font-bold transition-all duration-200 shadow-lg shadow-fuchsia-200"
-                    >
-                      Ingresar
-                    </button>
                   </div>
                 </motion.div>
               ) : (

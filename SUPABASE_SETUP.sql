@@ -68,6 +68,26 @@ ALTER TABLE products ENABLE ROW LEVEL SECURITY;
 ALTER TABLE product_media ENABLE ROW LEVEL SECURITY;
 ALTER TABLE messages ENABLE ROW LEVEL SECURITY;
 
+-- 5. Crear tabla de administradores (relacionada con clients)
+CREATE TABLE IF NOT EXISTS admins (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  client_id UUID NOT NULL REFERENCES clients(id) ON DELETE CASCADE,
+  email TEXT UNIQUE NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Índice para admins por email
+CREATE INDEX IF NOT EXISTS idx_admins_email ON admins(email);
+
+-- Habilitar RLS para admins
+ALTER TABLE admins ENABLE ROW LEVEL SECURITY;
+
+-- Políticas de RLS para admins: solo permitir lectura pública (los checks de auth se realizarán a nivel de aplicación)
+DROP POLICY IF EXISTS "Admins públicas" ON admins;
+CREATE POLICY "Admins públicas"
+  ON admins FOR SELECT
+  USING (true);
+
 -- Políticas de RLS para clientes
 DROP POLICY IF EXISTS "Clientes pueden ver su propio perfil" ON clients;
 CREATE POLICY "Clientes pueden ver su propio perfil"
@@ -122,4 +142,10 @@ CREATE POLICY "Clientes ven sus mensajes"
 DROP POLICY IF EXISTS "Clientes insertan mensajes" ON messages;
 CREATE POLICY "Clientes insertan mensajes"
   ON messages FOR INSERT
+  WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Administradores responden mensajes" ON messages;
+CREATE POLICY "Administradores responden mensajes"
+  ON messages FOR UPDATE
+  USING (true)
   WITH CHECK (true);
