@@ -1,7 +1,21 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { motion } from 'motion/react';
-import { ShoppingBag, Search, Filter, Heart, MessageCircle, Image, Video, X } from 'lucide-react';
+import {
+  ShoppingBag,
+  Search,
+  Filter,
+  Heart,
+  MessageCircle,
+  Image,
+  X,
+  Key,
+  Magnet,
+  Smartphone,
+  Palette,
+  Feather,
+  LayoutGrid,
+} from 'lucide-react';
 import { useOutletContext } from 'react-router';
 import { useSupabaseProducts } from '../../hooks/useSupabase';
 import { type Product, type ProductMedia } from '../../services/supabase';
@@ -17,14 +31,42 @@ interface OutletContext {
   client: Client;
 }
 
-const categoryLabels: Record<string, string> = {
-  'all': 'Todos',
-  'porta-llaves': '🔑 Porta llaves',
-  'imanes': '🧲 Imanes',
-  'porta-celulares': '📱 Porta celulares',
-  'cuadros-decorativos': '🖼️ Cuadros decorativos',
-  'mini-cuadros': '🎨 Mini cuadros',
-  'entre-vientos': '🎐 Entre vientos',
+const categoryLabels: Record<string, React.ReactNode> = {
+  'all': (
+    <span className="flex items-center gap-2">
+      <LayoutGrid className="w-4 h-4" /> Todos
+    </span>
+  ),
+  'porta-llaves': (
+    <span className="flex items-center gap-2">
+      <Key className="w-4 h-4" /> Porta llaves
+    </span>
+  ),
+  'imanes': (
+    <span className="flex items-center gap-2">
+      <Magnet className="w-4 h-4" /> Imanes
+    </span>
+  ),
+  'porta-celulares': (
+    <span className="flex items-center gap-2">
+      <Smartphone className="w-4 h-4" /> Porta celulares
+    </span>
+  ),
+  'cuadros-decorativos': (
+    <span className="flex items-center gap-2">
+      <Image className="w-4 h-4" /> Cuadros decorativos
+    </span>
+  ),
+  'mini-cuadros': (
+    <span className="flex items-center gap-2">
+      <Palette className="w-4 h-4" /> Mini cuadros
+    </span>
+  ),
+  'entre-vientos': (
+    <span className="flex items-center gap-2">
+      <Feather className="w-4 h-4" /> Entre vientos
+    </span>
+  ),
 };
 
 export function ProductCatalog() {
