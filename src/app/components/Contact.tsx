@@ -1,59 +1,44 @@
 import { motion } from 'motion/react';
-import { Instagram, Facebook, Twitter, Mail, Phone, MapPin, MessageCircle } from 'lucide-react';
+import { Instagram, Facebook, Mail, Phone, MapPin, MessageCircle } from 'lucide-react';
 import { Card } from './ui/card';
-import { Input } from './ui/input';
 import { Button } from './ui/button';
+import { useNavigate } from 'react-router';
 
 export function Contact() {
+  const navigate = useNavigate();
+
   const socialLinks = [
     {
       name: 'WhatsApp',
       icon: MessageCircle,
-      placeholder: '+57 123 456 7890',
+      label: '317 771 2112',
+      href: 'https://wa.me/573177712112',
       color: 'from-green-500 to-green-600',
       hoverColor: 'hover:shadow-green-200',
     },
     {
       name: 'Instagram',
       icon: Instagram,
-      placeholder: '@barsuarte_artesanias',
+      label: '@barsuarteartesanias',
+      href: 'https://www.instagram.com/barsuarteartesanias?igsh=MWxvNHExaXIweDc2',
       color: 'from-pink-500 to-fuchsia-600',
       hoverColor: 'hover:shadow-fuchsia-200',
     },
     {
       name: 'Facebook',
       icon: Facebook,
-      placeholder: 'Barsuarte Artesanías',
+      label: 'Barsuarte Artesanías',
+      href: 'https://www.facebook.com/share/17s5czyCHB/',
       color: 'from-blue-500 to-blue-600',
       hoverColor: 'hover:shadow-blue-200',
     },
     {
-      name: 'Twitter',
-      icon: Twitter,
-      placeholder: '@barsuarte',
-      color: 'from-sky-500 to-sky-600',
-      hoverColor: 'hover:shadow-sky-200',
-    },
-  ];
-
-  const contactInfo = [
-    {
+      name: 'Email',
       icon: Mail,
-      label: 'Email',
-      placeholder: 'contacto@barsuarte.com',
+      label: 'BarsuarteArtesanias@gmail.com',
+      href: 'https://mail.google.com/mail/?view=cm&fs=1&to=BarsuarteArtesanias@gmail.com',
       color: 'from-fuchsia-500 to-purple-500',
-    },
-    {
-      icon: Phone,
-      label: 'Teléfono',
-      placeholder: '+57 123 456 7890',
-      color: 'from-purple-500 to-violet-500',
-    },
-    {
-      icon: MapPin,
-      label: 'Ubicación',
-      placeholder: 'Colombia',
-      color: 'from-violet-500 to-fuchsia-500',
+      hoverColor: 'hover:shadow-purple-200',
     },
   ];
 
@@ -85,7 +70,7 @@ export function Contact() {
           className="mb-16"
         >
           <h3 className="text-3xl font-bold text-center mb-8 text-gray-800">
-            Síguenos en Redes Sociales
+            Información de Contacto
           </h3>
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
             {socialLinks.map((social, index) => (
@@ -96,54 +81,19 @@ export function Contact() {
                 viewport={{ once: true }}
                 transition={{ duration: 0.5, delay: index * 0.1 }}
               >
-                <Card className={`p-6 hover:shadow-2xl ${social.hoverColor} transition-all duration-300 border-2 border-transparent hover:border-fuchsia-300 cursor-pointer group`}>
-                  <div className={`w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br ${social.color} flex items-center justify-center group-hover:scale-110 transition-transform duration-300`}>
-                    <social.icon className="w-8 h-8 text-white" />
-                  </div>
-                  <h4 className="text-xl font-bold text-center mb-3 text-gray-800">
-                    {social.name}
-                  </h4>
-                  <Input
-                    placeholder={social.placeholder}
-                    className="text-center border-2 border-gray-200 focus:border-fuchsia-400"
-                  />
-                </Card>
-              </motion.div>
-            ))}
-          </div>
-        </motion.div>
-
-        {/* Datos de Contacto */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
-        >
-          <h3 className="text-3xl font-bold text-center mb-8 text-gray-800">
-            Información de Contacto
-          </h3>
-          <div className="grid md:grid-cols-3 gap-8 mb-12">
-            {contactInfo.map((info, index) => (
-              <motion.div
-                key={info.label}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: index * 0.1 }}
-              >
-                <Card className="p-8 hover:shadow-2xl hover:shadow-purple-200 transition-all duration-300 border-2 border-transparent hover:border-purple-300 h-full">
-                  <div className={`w-16 h-16 mx-auto mb-6 rounded-2xl bg-gradient-to-br ${info.color} flex items-center justify-center`}>
-                    <info.icon className="w-8 h-8 text-white" />
-                  </div>
-                  <h4 className="text-2xl font-bold text-center mb-4 text-gray-800">
-                    {info.label}
-                  </h4>
-                  <Input
-                    placeholder={info.placeholder}
-                    className="text-center border-2 border-gray-200 focus:border-purple-400"
-                  />
-                </Card>
+                <a href={social.href} target="_blank" rel="noopener noreferrer">
+                  <Card className={`p-6 hover:shadow-2xl ${social.hoverColor} transition-all duration-300 border-2 border-transparent hover:border-fuchsia-300 cursor-pointer group h-full`}>
+                    <div className={`w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br ${social.color} flex items-center justify-center group-hover:scale-110 transition-transform duration-300`}>
+                      <social.icon className="w-8 h-8 text-white" />
+                    </div>
+                    <h4 className="text-xl font-bold text-center mb-2 text-gray-800">
+                      {social.name}
+                    </h4>
+                    <p className="text-center text-gray-600 text-sm font-medium break-all">
+                      {social.label}
+                    </p>
+                  </Card>
+                </a>
               </motion.div>
             ))}
           </div>
@@ -163,7 +113,12 @@ export function Contact() {
             <p className="text-xl mb-8 opacity-90">
               Contáctanos hoy y hagamos realidad tu proyecto artesanal
             </p>
-            <Button className="bg-white text-fuchsia-600 hover:bg-gray-100 text-lg px-8 py-6 font-bold">
+            <Button
+              onClick={() => {
+                navigate('/clientes/mensajes');
+              }}
+              className="bg-white text-fuchsia-600 hover:bg-gray-100 text-lg px-8 py-6 font-bold"
+            >
               Enviar Mensaje
             </Button>
           </Card>

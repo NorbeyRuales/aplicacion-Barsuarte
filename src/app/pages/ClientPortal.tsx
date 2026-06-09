@@ -5,6 +5,13 @@ import { User, Lock, ShoppingBag, MessageSquare, LogOut, Home, Eye, EyeOff } fro
 import { clientsService, type Client } from '../../services/supabase';
 
 const CURRENT_CLIENT_KEY = 'barsuarte_current_client';
+const POST_AUTH_REDIRECT_KEY = 'barsuarte_post_auth_redirect';
+
+const getPostAuthRedirect = () => {
+  const redirect = localStorage.getItem(POST_AUTH_REDIRECT_KEY);
+  localStorage.removeItem(POST_AUTH_REDIRECT_KEY);
+  return redirect || '/clientes/productos';
+};
 
 export function ClientPortal() {
   const navigate = useNavigate();
@@ -33,7 +40,10 @@ export function ClientPortal() {
   }, []);
 
   useEffect(() => {
-    if (!isLoggedIn && location.pathname !== '/clientes') {
+    const savedClient = localStorage.getItem(CURRENT_CLIENT_KEY);
+
+    if (!isLoggedIn && !savedClient && location.pathname !== '/clientes') {
+      localStorage.setItem(POST_AUTH_REDIRECT_KEY, location.pathname);
       navigate('/clientes', { replace: true });
     }
   }, [isLoggedIn, location.pathname, navigate]);
@@ -52,7 +62,7 @@ export function ClientPortal() {
     setCurrentClient(client);
     setIsLoggedIn(true);
     localStorage.setItem(CURRENT_CLIENT_KEY, JSON.stringify(client));
-    navigate('/clientes/productos');
+    navigate(getPostAuthRedirect());
   };
 
   const handleRegister = async (e: React.FormEvent) => {
@@ -87,7 +97,7 @@ export function ClientPortal() {
     setCurrentClient(newClient);
     setIsLoggedIn(true);
     localStorage.setItem(CURRENT_CLIENT_KEY, JSON.stringify(newClient));
-    navigate('/clientes/productos');
+    navigate(getPostAuthRedirect());
   };
 
   const handleLogout = () => {
