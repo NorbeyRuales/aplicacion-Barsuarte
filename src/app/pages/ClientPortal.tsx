@@ -150,14 +150,41 @@ export function ClientPortal() {
 
           <div className="bg-white rounded-3xl shadow-2xl shadow-fuchsia-200/50 p-8">
             {/* Logo */}
-            <div className="text-center mb-8">
-              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-fuchsia-600 to-purple-600 flex items-center justify-center">
-                <span className="text-white font-extrabold text-2xl">BA</span>
+            <div className="flex flex-col items-center mb-8">
+              <div className="w-20 h-20 bg-white rounded-full p-3 shadow-md flex items-center justify-center mb-4 border border-fuchsia-100">
+                <img
+                  src="/Logo_Plumas.png"
+                  alt="Logo Barsuarte"
+                  className="w-full h-full object-contain"
+                />
               </div>
-              <h1 className="text-3xl font-bold bg-gradient-to-r from-fuchsia-600 to-purple-600 bg-clip-text text-transparent mb-2">
+              <div className="flex flex-col items-center leading-none">
+                <span
+                  className="uppercase text-[#163f9b] font-bold"
+                  style={{
+                    fontFamily: 'Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif',
+                    fontSize: '2rem',
+                    letterSpacing: '0.09em',
+                    transform: 'skewX(-3deg)',
+                  }}
+                >
+                  Barsuarte
+                </span>
+                <span
+                  className="text-fuchsia-600 font-medium mt-1"
+                  style={{
+                    fontFamily: '"Brush Script MT", "Segoe Script", "Snell Roundhand", cursive',
+                    fontSize: '1.25rem',
+                    letterSpacing: '0.02em',
+                    transform: 'skewX(-6deg)',
+                  }}
+                >
+                  Naturalidad y Color
+                </span>
+              </div>
+              <h1 className="text-2xl font-bold bg-gradient-to-r from-fuchsia-600 to-purple-600 bg-clip-text text-transparent mt-4 mb-1">
                 Portal de Clientes
               </h1>
-              <p className="text-gray-600 text-sm">Barsuarte Artesanías</p>
             </div>
 
             {/* Toggle */}
@@ -352,14 +379,39 @@ export function ClientPortal() {
       <header className="bg-white shadow-md border-b border-fuchsia-100">
         <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-fuchsia-600 to-purple-600 flex items-center justify-center">
-              <span className="text-white font-extrabold">BA</span>
+            <div className="w-10 h-10 rounded-full overflow-hidden flex items-center justify-center bg-white border border-gray-200">
+              <img
+                src="/Logo_Plumas.png"
+                alt="Logo Barsuarte"
+                className="w-full h-full object-contain"
+              />
             </div>
-            <div>
-              <h1 className="font-bold text-gray-800">Barsuarte Artesanías</h1>
-                <p className="text-xs text-gray-500">
-                  Bienvenido, {currentClient?.name} {currentClient?.surname || ''}
-                </p>
+            <div className="flex flex-col leading-none">
+              <span
+                className="uppercase text-[#163f9b] font-bold"
+                style={{
+                  fontFamily: 'Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif',
+                  fontSize: '1.25rem',
+                  letterSpacing: '0.09em',
+                  transform: 'skewX(-3deg)',
+                }}
+              >
+                Barsuarte
+              </span>
+              <span
+                className="text-fuchsia-600 font-medium -mt-0.5"
+                style={{
+                  fontFamily: '"Brush Script MT", "Segoe Script", "Snell Roundhand", cursive',
+                  fontSize: '0.85rem',
+                  letterSpacing: '0.02em',
+                  transform: 'skewX(-6deg)',
+                }}
+              >
+                Naturalidad y Color
+              </span>
+              <p className="text-[10px] text-gray-400 mt-1">
+                Bienvenido, {currentClient?.name} {currentClient?.surname || ''}
+              </p>
             </div>
           </div>
 
