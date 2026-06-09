@@ -74,9 +74,9 @@ export function useSyncProducts() {
             for (const mediaItem of product.media) {
               await mediaService.addMedia(created.id, {
                 type: mediaItem.type || 'image',
-                data_url: mediaItem.data_url || mediaItem.url || '',
+                dataUrl: mediaItem.dataUrl || mediaItem.data_url || mediaItem.url || '',
                 name: mediaItem.name || mediaItem.filename || 'media',
-                uploaded_at: mediaItem.uploaded_at || new Date().toISOString(),
+                uploadedAt: mediaItem.uploadedAt || mediaItem.uploaded_at || new Date().toISOString(),
               });
             }
             console.log(`✅ Producto ${product.title} y su media migrados`);
@@ -115,8 +115,8 @@ export function useSyncMessages() {
         const exists = supabaseMessages.find((m) => m.id === message.id);
         if (!exists) {
           await messagesService.create({
-            client_id: message.clientId,
-            client_name: message.clientName,
+            clientId: message.clientId,
+            clientName: message.clientName,
             subject: message.subject,
             message: message.message,
             status: message.status,

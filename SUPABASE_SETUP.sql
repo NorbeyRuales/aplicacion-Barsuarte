@@ -105,6 +105,11 @@ CREATE POLICY "Clientes pueden actualizar su propio perfil"
   USING (true)
   WITH CHECK (true);
 
+DROP POLICY IF EXISTS "Clientes pueden eliminar cuentas" ON clients;
+CREATE POLICY "Clientes pueden eliminar cuentas"
+  ON clients FOR DELETE
+  USING (true);
+
 -- Políticas de RLS para productos (lectura pública)
 DROP POLICY IF EXISTS "Productos públicos" ON products;
 CREATE POLICY "Productos públicos"
@@ -122,6 +127,11 @@ CREATE POLICY "Productos pueden ser actualizados"
   USING (true)
   WITH CHECK (true);
 
+DROP POLICY IF EXISTS "Productos pueden ser eliminados" ON products;
+CREATE POLICY "Productos pueden ser eliminados"
+  ON products FOR DELETE
+  USING (true);
+
 -- Políticas de RLS para product_media (lectura pública)
 DROP POLICY IF EXISTS "Media pública" ON product_media;
 CREATE POLICY "Media pública"
@@ -132,6 +142,11 @@ DROP POLICY IF EXISTS "Media puede ser insertada" ON product_media;
 CREATE POLICY "Media puede ser insertada"
   ON product_media FOR INSERT
   WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Media puede ser eliminada" ON product_media;
+CREATE POLICY "Media puede ser eliminada"
+  ON product_media FOR DELETE
+  USING (true);
 
 -- Políticas de RLS para mensajes
 DROP POLICY IF EXISTS "Clientes ven sus mensajes" ON messages;
@@ -149,3 +164,19 @@ CREATE POLICY "Administradores responden mensajes"
   ON messages FOR UPDATE
   USING (true)
   WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Mensajes pueden ser eliminados" ON messages;
+CREATE POLICY "Mensajes pueden ser eliminados"
+  ON messages FOR DELETE
+  USING (true);
+
+-- Políticas de escritura para admins
+DROP POLICY IF EXISTS "Admins pueden ser creados" ON admins;
+CREATE POLICY "Admins pueden ser creados"
+  ON admins FOR INSERT
+  WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Admins pueden ser eliminados" ON admins;
+CREATE POLICY "Admins pueden ser eliminados"
+  ON admins FOR DELETE
+  USING (true);

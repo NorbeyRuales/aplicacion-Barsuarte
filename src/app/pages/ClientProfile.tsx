@@ -1,18 +1,19 @@
 import { useState, useEffect } from 'react';
-import { useOutletContext, useNavigate } from 'react-router';
+import { useOutletContext } from 'react-router';
 import { motion } from 'motion/react';
 import { User, Trash, Check } from 'lucide-react';
 import { clientsService, type Client as SupabaseClient } from '../../services/supabase';
 
 interface OutletContext {
   client: SupabaseClient;
+  setClient: (client: SupabaseClient | null) => void;
+  logout: () => void;
 }
 
 const CURRENT_CLIENT_KEY = 'barsuarte_current_client';
 
 export function ClientProfile() {
-  const { client } = useOutletContext<OutletContext>();
-  const navigate = useNavigate();
+  const { client, setClient, logout } = useOutletContext<OutletContext>();
   const [name, setName] = useState(client?.name || '');
   const [surname, setSurname] = useState('');
   const [email, setEmail] = useState(client?.email || '');
@@ -46,6 +47,7 @@ export function ClientProfile() {
     }
 
     localStorage.setItem(CURRENT_CLIENT_KEY, JSON.stringify(updatedClient));
+    setClient(updatedClient);
     setSuccess('Perfil actualizado correctamente');
     setTimeout(() => setSuccess(''), 3000);
   };
@@ -61,7 +63,7 @@ export function ClientProfile() {
     }
 
     localStorage.removeItem(CURRENT_CLIENT_KEY);
-    navigate('/clientes');
+    logout();
   };
 
   return (

@@ -392,7 +392,7 @@ export function ClientPortal() {
 
       {/* Content */}
       <main className="max-w-7xl mx-auto px-4 py-8">
-        <Outlet context={{ client: currentClient }} />
+        <Outlet context={{ client: currentClient, setClient: setCurrentClient, logout: handleLogout }} />
       </main>
     </div>
   );
