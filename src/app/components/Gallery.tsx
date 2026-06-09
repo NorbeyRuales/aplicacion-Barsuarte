@@ -20,7 +20,7 @@ const defaultImages = [
 ];
 
 interface GalleryProps {
-  onAdminClick: () => void;
+  onAdminClick?: () => void;
 }
 
 export function Gallery({ onAdminClick }: GalleryProps) {
@@ -179,20 +179,7 @@ export function Gallery({ onAdminClick }: GalleryProps) {
           </motion.div>
         )}
 
-        {/* Admin hint */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          viewport={{ once: true }}
-          className="text-center mt-8"
-        >
-          <button
-            onClick={onAdminClick}
-            className="text-xs text-gray-300 hover:text-fuchsia-400 transition-colors flex items-center gap-1 mx-auto"
-          >
-            <Lock className="w-3 h-3" /> Administrar contenido
-          </button>
-        </motion.div>
+
       </div>
 
     </section>

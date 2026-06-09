@@ -401,9 +401,7 @@ export function AdminPanel({ isOpen, onClose, onAuthChange }: AdminPanelProps) {
       return;
     }
 
-    setAuthenticated(true);
-    localStorage.setItem(SESSION_KEY, email);
-    showToast('Administrador registrado e ingresado correctamente');
+    showToast('Administrador registrado correctamente');
 
     // reset
     setAdminRegName('');
@@ -412,6 +410,7 @@ export function AdminPanel({ isOpen, onClose, onAuthChange }: AdminPanelProps) {
     setAdminRegPhone('');
     setAdminRegPassword('');
     setShowRegister(false);
+    await refreshData();
   };
 
   const resetProductForm = () => {
@@ -715,65 +714,43 @@ export function AdminPanel({ isOpen, onClose, onAuthChange }: AdminPanelProps) {
                   </div>
 
                   <div className="space-y-4">
-                    {!showRegister ? (
-                      <>
-                        <input
-                          type="email"
-                          placeholder="Correo electrónico"
-                          value={loginEmail}
-                          onChange={(e) => { setLoginEmail(e.target.value); setLoginError(''); }}
-                          className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-fuchsia-400 focus:outline-none transition-colors"
-                        />
-                        <div className="relative">
-                          <input
-                            type={showPassword ? 'text' : 'password'}
-                            placeholder="Contraseña"
-                            value={loginPassword}
-                            onChange={(event) => { setLoginPassword(event.target.value); setLoginError(''); }}
-                            onKeyDown={(event) => event.key === 'Enter' && handleLogin()}
-                            className="w-full px-4 py-3 pr-12 border-2 border-gray-200 rounded-xl focus:border-fuchsia-400 focus:outline-none transition-colors"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => setShowPassword((value) => !value)}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                          >
-                            {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                          </button>
-                        </div>
+                    <input
+                      type="email"
+                      placeholder="Correo electrónico"
+                      value={loginEmail}
+                      onChange={(e) => { setLoginEmail(e.target.value); setLoginError(''); }}
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-fuchsia-400 focus:outline-none transition-colors"
+                    />
+                    <div className="relative">
+                      <input
+                        type={showPassword ? 'text' : 'password'}
+                        placeholder="Contraseña"
+                        value={loginPassword}
+                        onChange={(event) => { setLoginPassword(event.target.value); setLoginError(''); }}
+                        onKeyDown={(event) => event.key === 'Enter' && handleLogin()}
+                        className="w-full px-4 py-3 pr-12 border-2 border-gray-200 rounded-xl focus:border-fuchsia-400 focus:outline-none transition-colors"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword((value) => !value)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                      >
+                        {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                      </button>
+                    </div>
 
-                        {loginError && (
-                          <p className="text-red-500 text-sm flex items-center gap-1">
-                            <AlertCircle className="w-4 h-4" /> {loginError}
-                          </p>
-                        )}
-
-                        <button
-                          onClick={handleLogin}
-                          className="w-full py-3 bg-gradient-to-r from-fuchsia-600 to-purple-600 hover:from-fuchsia-700 hover:to-purple-700 text-white rounded-xl font-bold transition-all duration-200 shadow-lg shadow-fuchsia-200"
-                        >
-                          Ingresar
-                        </button>
-
-                        <div className="text-center text-sm text-gray-500 mt-2">
-                          ¿No tienes una cuenta de administrador?{' '}
-                          <button onClick={() => setShowRegister(true)} className="text-fuchsia-600 underline">Regístrate</button>
-                        </div>
-                      </>
-                    ) : (
-                      <div className="space-y-3">
-                        <input value={adminRegName} onChange={(e) => setAdminRegName(e.target.value)} placeholder="Nombre" className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl" />
-                        <input value={adminRegSurname} onChange={(e) => setAdminRegSurname(e.target.value)} placeholder="Apellido" className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl" />
-                        <input value={adminRegEmail} onChange={(e) => setAdminRegEmail(e.target.value)} placeholder="Correo electrónico" className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl" />
-                        <input value={adminRegPhone} onChange={(e) => setAdminRegPhone(e.target.value)} placeholder="Teléfono" className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl" />
-                        <input value={adminRegPassword} onChange={(e) => setAdminRegPassword(e.target.value)} placeholder="Contraseña" type={showPassword ? 'text' : 'password'} className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl" />
-
-                        <div className="flex gap-2">
-                          <button onClick={handleRegisterAdmin} className="flex-1 py-3 bg-green-600 text-white rounded-xl">Registrar admin</button>
-                          <button onClick={() => setShowRegister(false)} className="px-4 py-3 border rounded-xl">Cancelar</button>
-                        </div>
-                      </div>
+                    {loginError && (
+                      <p className="text-red-500 text-sm flex items-center gap-1">
+                        <AlertCircle className="w-4 h-4" /> {loginError}
+                      </p>
                     )}
+
+                    <button
+                      onClick={handleLogin}
+                      className="w-full py-3 bg-gradient-to-r from-fuchsia-600 to-purple-600 hover:from-fuchsia-700 hover:to-purple-700 text-white rounded-xl font-bold transition-all duration-200 shadow-lg shadow-fuchsia-200"
+                    >
+                      Ingresar
+                    </button>
                   </div>
                 </motion.div>
               ) : (
@@ -1111,7 +1088,7 @@ export function AdminPanel({ isOpen, onClose, onAuthChange }: AdminPanelProps) {
                           <input value={newClientPassword} onChange={(event) => setNewClientPassword(event.target.value)} placeholder="Contraseña" className="px-3 py-2 border rounded-lg md:col-span-2" />
                         </div>
                         <div className="mt-3 flex gap-2">
-                          <button onClick={handleCreateClient} className="px-4 py-2 bg-fuchsia-600 text-white rounded-lg">Crear</button>
+                          <button onClick={handleCreateClient} className="px-4 py-2 bg-fuchsia-600 text-white rounded-lg">Crear Cliente</button>
                           <button
                             onClick={() => {
                               setNewClientName('');
@@ -1119,6 +1096,32 @@ export function AdminPanel({ isOpen, onClose, onAuthChange }: AdminPanelProps) {
                               setNewClientEmail('');
                               setNewClientPhone('');
                               setNewClientPassword('');
+                            }}
+                            className="px-4 py-2 border rounded-lg"
+                          >
+                            Limpiar
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="bg-white rounded-lg p-4 border border-gray-100">
+                        <h3 className="font-bold text-gray-800 mb-2">Crear Administrador</h3>
+                        <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+                          <input value={adminRegName} onChange={(event) => setAdminRegName(event.target.value)} placeholder="Nombre" className="px-3 py-2 border rounded-lg" />
+                          <input value={adminRegSurname} onChange={(event) => setAdminRegSurname(event.target.value)} placeholder="Apellido" className="px-3 py-2 border rounded-lg" />
+                          <input value={adminRegEmail} onChange={(event) => setAdminRegEmail(event.target.value)} placeholder="Correo electrónico" className="px-3 py-2 border rounded-lg" />
+                          <input value={adminRegPhone} onChange={(event) => setAdminRegPhone(event.target.value)} placeholder="Teléfono" className="px-3 py-2 border rounded-lg" />
+                          <input value={adminRegPassword} onChange={(event) => setAdminRegPassword(event.target.value)} placeholder="Contraseña" type="password" className="px-3 py-2 border rounded-lg md:col-span-2" />
+                        </div>
+                        <div className="mt-3 flex gap-2">
+                          <button onClick={handleRegisterAdmin} className="px-4 py-2 bg-green-600 text-white rounded-lg">Crear Admin</button>
+                          <button
+                            onClick={() => {
+                              setAdminRegName('');
+                              setAdminRegSurname('');
+                              setAdminRegEmail('');
+                              setAdminRegPhone('');
+                              setAdminRegPassword('');
                             }}
                             className="px-4 py-2 border rounded-lg"
                           >

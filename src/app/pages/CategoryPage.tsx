@@ -4,7 +4,6 @@ import { motion } from 'motion/react';
 import { ArrowLeft, Lock, Images } from 'lucide-react';
 import { Navbar } from '../components/Navbar';
 import { Footer } from '../components/Footer';
-import { AdminPanel } from '../components/AdminPanel';
 import { PageHero } from '../components/PageHero';
 import { useSupabaseProducts } from '../../hooks/useSupabase';
 
@@ -50,8 +49,6 @@ const categoryConfig = {
 export function CategoryPage() {
   const { category } = useParams<{ category: string }>();
   const navigate = useNavigate();
-  const [adminOpen, setAdminOpen] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false);
   const { products = [] } = useSupabaseProducts();
 
   const config = category && category in categoryConfig
@@ -70,7 +67,7 @@ export function CategoryPage() {
   if (!config) {
     return (
       <div className="min-h-screen bg-white flex flex-col">
-        <Navbar onAdminClick={() => setAdminOpen(true)} isAdmin={isAdmin} />
+        <Navbar />
         <main className="flex-1 pt-16 flex items-center justify-center">
           <div className="text-center">
             <h1 className="text-4xl font-bold text-gray-800 mb-4">Categoría no encontrada</h1>
@@ -86,7 +83,7 @@ export function CategoryPage() {
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
-      <Navbar onAdminClick={() => setAdminOpen(true)} isAdmin={isAdmin} />
+      <Navbar />
       <main className="flex-1 pt-16">
         <PageHero
           title={config.title}
@@ -179,11 +176,7 @@ export function CategoryPage() {
         </section>
       </main>
       <Footer />
-      <AdminPanel
-        isOpen={adminOpen}
-        onClose={() => setAdminOpen(false)}
-        onAuthChange={setIsAdmin}
-      />
+
     </div>
   );
 }

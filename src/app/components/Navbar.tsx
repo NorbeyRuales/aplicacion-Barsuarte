@@ -13,8 +13,8 @@ const navLinks = [
 ];
 
 interface NavbarProps {
-  onAdminClick: () => void;
-  isAdmin: boolean;
+  onAdminClick?: () => void;
+  isAdmin?: boolean;
 }
 
 export function Navbar({ onAdminClick, isAdmin }: NavbarProps) {
@@ -128,19 +128,21 @@ export function Navbar({ onAdminClick, isAdmin }: NavbarProps) {
               <UserCircle2 className="w-3.5 h-3.5" />
               Portal Clientes
             </button>
-            <button
-              onClick={onAdminClick}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 ${
-                isAdmin
-                  ? 'bg-fuchsia-600 text-white shadow-md shadow-fuchsia-300'
-                  : solidBg
-                  ? 'border border-fuchsia-300 text-fuchsia-600 hover:bg-fuchsia-50'
-                  : 'border border-white/40 text-white hover:bg-white/10'
-              }`}
-            >
-              <Settings className="w-3.5 h-3.5" />
-              {isAdmin ? 'Admin' : 'Acceso'}
-            </button>
+            {onAdminClick && (
+              <button
+                onClick={onAdminClick}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 ${
+                  isAdmin
+                    ? 'bg-fuchsia-600 text-white shadow-md shadow-fuchsia-300'
+                    : solidBg
+                    ? 'border border-fuchsia-300 text-fuchsia-600 hover:bg-fuchsia-50'
+                    : 'border border-white/40 text-white hover:bg-white/10'
+                }`}
+              >
+                <Settings className="w-3.5 h-3.5" />
+                {isAdmin ? 'Admin' : 'Acceso'}
+              </button>
+            )}
 
             <button
               onClick={() => setMobileOpen((v) => !v)}

@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
-import { User, Lock, ShoppingBag, MessageSquare, LogOut, Home, Eye, EyeOff } from 'lucide-react';
-import { clientsService, type Client } from '../../services/supabase';
+import { User, Lock, ShoppingBag, MessageSquare, LogOut, Home, Eye, EyeOff, Settings } from 'lucide-react';
+import { clientsService, adminsService, type Client } from '../../services/supabase';
+import { AdminPanel } from '../components/AdminPanel';
 
 const CURRENT_CLIENT_KEY = 'barsuarte_current_client';
 const POST_AUTH_REDIRECT_KEY = 'barsuarte_post_auth_redirect';
@@ -30,12 +31,18 @@ export function ClientPortal() {
   const [registerPhone, setRegisterPhone] = useState('');
   const [registerPassword, setRegisterPassword] = useState('');
   const [error, setError] = useState('');
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [adminOpen, setAdminOpen] = useState(false);
 
   useEffect(() => {
     const savedClient = localStorage.getItem(CURRENT_CLIENT_KEY);
     if (savedClient) {
-      setCurrentClient(JSON.parse(savedClient));
+      const clientObj = JSON.parse(savedClient) as Client;
+      setCurrentClient(clientObj);
       setIsLoggedIn(true);
+      adminsService.getByEmail(clientObj.email).then((admin) => {
+        setIsAdmin(!!admin);
+      });
     }
   }, []);
 
@@ -57,6 +64,12 @@ export function ClientPortal() {
     if (!client || client.password !== loginPassword) {
       setError('Correo o contraseña incorrectos');
       return;
+    }
+
+    const admin = await adminsService.getByEmail(email);
+    setIsAdmin(!!admin);
+    if (admin) {
+      localStorage.setItem('barsuarte_admin_session', email);
     }
 
     setCurrentClient(client);
@@ -94,6 +107,7 @@ export function ClientPortal() {
       return;
     }
 
+    setIsAdmin(false);
     setCurrentClient(newClient);
     setIsLoggedIn(true);
     localStorage.setItem(CURRENT_CLIENT_KEY, JSON.stringify(newClient));
@@ -103,7 +117,10 @@ export function ClientPortal() {
   const handleLogout = () => {
     setIsLoggedIn(false);
     setCurrentClient(null);
+    setIsAdmin(false);
+    setAdminOpen(false);
     localStorage.removeItem(CURRENT_CLIENT_KEY);
+    localStorage.removeItem('barsuarte_admin_session');
     setLoginEmail('');
     setLoginPassword('');
     setRegisterName('');
@@ -361,6 +378,15 @@ export function ClientPortal() {
               <User className="w-4 h-4" />
               Perfil
             </button>
+            {isAdmin && (
+              <button
+                onClick={() => setAdminOpen(true)}
+                className="flex items-center gap-2 px-3 py-2 text-sm text-fuchsia-600 bg-fuchsia-50 hover:bg-fuchsia-100 rounded-lg transition-all font-medium border border-fuchsia-200 shadow-sm"
+              >
+                <Settings className="w-4 h-4" />
+                Panel Admin
+              </button>
+            )}
             <button
               onClick={handleLogout}
               className="flex items-center gap-2 px-3 py-2 text-sm text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
@@ -406,6 +432,12 @@ export function ClientPortal() {
       <main className="max-w-7xl mx-auto px-4 py-8">
         <Outlet context={{ client: currentClient, setClient: setCurrentClient, logout: handleLogout }} />
       </main>
+
+      <AdminPanel
+        isOpen={adminOpen}
+        onClose={() => setAdminOpen(false)}
+        onAuthChange={setIsAdmin}
+      />
     </div>
   );
 }
