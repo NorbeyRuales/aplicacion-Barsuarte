@@ -1,10 +1,15 @@
 import { motion } from 'motion/react';
+import { useNavigate } from 'react-router';
 import { ImageWithFallback } from './figma/ImageWithFallback';
 import { Upload } from 'lucide-react';
 import { Button } from './ui/button';
 import { Card } from './ui/card';
+import { useSupabaseStories } from '../../hooks/useSupabase';
 
 export function Journey() {
+  const navigate = useNavigate();
+  const { stories, loading } = useSupabaseStories({ approvedOnly: true });
+
   // Placeholder para fotos de trayectoria
   const journeyImages = [
     {
@@ -62,7 +67,52 @@ export function Journey() {
           ))}
         </div>
 
-        {/* Espacio para subir más fotos de trayectoria */}
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
+          className="mb-12"
+        >
+          <div className="text-center mb-8">
+            <h3 className="text-3xl md:text-4xl font-bold text-gray-800 mb-3">
+              Emprendimientos de la comunidad
+            </h3>
+            <p className="text-gray-600">
+              Historias compartidas por clientes y aprobadas por el administrador
+            </p>
+          </div>
+
+          {loading ? (
+            <div className="text-center text-gray-500 py-8">Cargando historias...</div>
+          ) : stories.length === 0 ? (
+            <div className="text-center py-10 rounded-2xl border border-dashed border-fuchsia-200 bg-fuchsia-50/60">
+              <p className="text-gray-600">Aún no hay emprendimientos aprobados.</p>
+            </div>
+          ) : (
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {stories.map((story, index) => (
+                <motion.article
+                  key={story.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.4, delay: index * 0.08 }}
+                  className="bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-lg hover:shadow-xl hover:shadow-purple-100 transition-all"
+                >
+                  <img src={story.imageUrl} alt={story.title} className="w-full h-56 object-cover" />
+                  <div className="p-5">
+                    <p className="text-xs text-fuchsia-600 font-medium mb-2">{story.clientName}</p>
+                    <h4 className="text-xl font-bold text-gray-800 mb-2">{story.title}</h4>
+                    <p className="text-sm text-gray-600 leading-relaxed">{story.description}</p>
+                  </div>
+                </motion.article>
+              ))}
+            </div>
+          )}
+        </motion.div>
+
+        {/* Espacio para subir emprendimientos */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -78,10 +128,13 @@ export function Journey() {
                 Comparte tu Historia
               </h3>
               <p className="text-xl text-gray-600 mb-8">
-                Sube fotografías que muestren tu trayectoria, tu equipo de trabajo, procesos de elaboración y momentos especiales de tu emprendimiento
+                Publica tu emprendimiento con una imagen y una breve descripción. El administrador revisará tu historia antes de mostrarla en esta página.
               </p>
-              <Button className="bg-gradient-to-r from-fuchsia-600 via-purple-600 to-violet-600 hover:from-fuchsia-700 hover:via-purple-700 hover:to-violet-700 text-white text-lg px-8 py-6">
-                Agregar Fotos de Trayectoria
+              <Button
+                onClick={() => navigate('/clientes/historia')}
+                className="bg-gradient-to-r from-fuchsia-600 via-purple-600 to-violet-600 hover:from-fuchsia-700 hover:via-purple-700 hover:to-violet-700 text-white text-lg px-8 py-6"
+              >
+                Compartir emprendimiento
               </Button>
             </div>
           </Card>

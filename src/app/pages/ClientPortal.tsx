@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
-import { User, Lock, ShoppingBag, MessageSquare, LogOut, Home, Eye, EyeOff, Settings } from 'lucide-react';
+import { User, Lock, ShoppingBag, MessageSquare, LogOut, Home, Eye, EyeOff, Settings, Upload } from 'lucide-react';
 import { clientsService, adminsService, type Client } from '../../services/supabase';
 import { AdminPanel } from '../components/AdminPanel';
 
@@ -475,6 +475,17 @@ export function ClientPortal() {
             >
               <MessageSquare className="w-4 h-4" />
               Mensajes
+            </button>
+            <button
+              onClick={() => navigate('/clientes/historia')}
+              className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+                location.pathname === '/clientes/historia'
+                  ? 'border-fuchsia-600 text-fuchsia-600'
+                  : 'border-transparent text-gray-600 hover:text-fuchsia-600'
+              }`}
+            >
+              <Upload className="w-4 h-4" />
+              Compartir emprendimiento
             </button>
           </div>
         </div>

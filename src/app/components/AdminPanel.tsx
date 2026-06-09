@@ -26,11 +26,13 @@ import {
   mediaService,
   messagesService,
   adminsService,
+  storiesService,
   uploadFileToStorage,
   type Client,
   type Product,
   type ProductMedia,
   type Message,
+  type EntrepreneurStory,
 } from '../../services/supabase';
 
 const ADMINS_KEY = 'barsuarte_admins';
@@ -270,10 +272,12 @@ export function AdminPanel({ isOpen, onClose, onAuthChange }: AdminPanelProps) {
   const [loginError, setLoginError] = useState('');
   const [products, setProducts] = useState<ProductItem[]>(loadProducts);
   const [messages, setMessages] = useState<Message[]>([]);
+  const [stories, setStories] = useState<EntrepreneurStory[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
   const [responses, setResponses] = useState<Record<string, string>>({});
+  const [storyNotes, setStoryNotes] = useState<Record<string, string>>({});
   const [toast, setToast] = useState<{ msg: string; type: 'ok' | 'err' } | null>(null);
-  const [activeTab, setActiveTab] = useState<'products' | 'messages' | 'users'>('products');
+  const [activeTab, setActiveTab] = useState<'products' | 'messages' | 'stories' | 'users'>('products');
   const [productForm, setProductForm] = useState(DEFAULT_PRODUCT_FORM);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [editingProductId, setEditingProductId] = useState<string | null>(null);
@@ -299,14 +303,16 @@ export function AdminPanel({ isOpen, onClose, onAuthChange }: AdminPanelProps) {
 
     const refresh = async () => {
       try {
-        const [supabaseProducts, supabaseMessages, supabaseClients] = await Promise.all([
+        const [supabaseProducts, supabaseMessages, supabaseStories, supabaseClients] = await Promise.all([
           productsService.getAllWithMedia(),
           messagesService.getAll(),
+          storiesService.getAll(),
           clientsService.getAll(),
         ]);
 
         setProducts(supabaseProducts as ProductItem[]);
         setMessages(supabaseMessages);
+        setStories(supabaseStories);
         setClients(supabaseClients);
       } catch (error) {
         console.error('Error loading admin data:', error);
@@ -320,6 +326,7 @@ export function AdminPanel({ isOpen, onClose, onAuthChange }: AdminPanelProps) {
 
   const groupedProducts = useMemo(() => products, [products]);
   const pendingMessages = messages.filter((message) => message.status === 'pending').length;
+  const pendingStories = stories.filter((story) => story.status === 'pending').length;
 
   const showToast = (msg: string, type: 'ok' | 'err' = 'ok') => {
     setToast({ msg, type });
@@ -479,14 +486,16 @@ export function AdminPanel({ isOpen, onClose, onAuthChange }: AdminPanelProps) {
 
   const refreshData = async () => {
     try {
-      const [supabaseProducts, supabaseMessages, supabaseClients] = await Promise.all([
+      const [supabaseProducts, supabaseMessages, supabaseStories, supabaseClients] = await Promise.all([
         productsService.getAllWithMedia(),
         messagesService.getAll(),
+        storiesService.getAll(),
         clientsService.getAll(),
       ]);
 
       setProducts(supabaseProducts as ProductItem[]);
       setMessages(supabaseMessages);
+      setStories(supabaseStories);
       setClients(supabaseClients);
     } catch (error) {
       console.error('Error cargando datos del panel:', error);
@@ -657,6 +666,30 @@ export function AdminPanel({ isOpen, onClose, onAuthChange }: AdminPanelProps) {
     showToast('Respuesta enviada al cliente');
   };
 
+  const handleReviewStory = async (storyId: string, status: 'approved' | 'rejected') => {
+    const reviewedBy = localStorage.getItem(SESSION_KEY) || undefined;
+    const updated = await storiesService.review(storyId, status, reviewedBy, storyNotes[storyId]);
+    if (!updated) {
+      showToast('No se pudo revisar la historia', 'err');
+      return;
+    }
+
+    setStoryNotes((prev) => ({ ...prev, [storyId]: '' }));
+    await refreshData();
+    showToast(status === 'approved' ? 'Historia aprobada' : 'Historia rechazada');
+  };
+
+  const handleDeleteStory = async (storyId: string) => {
+    const deleted = await storiesService.delete(storyId);
+    if (!deleted) {
+      showToast('No se pudo eliminar la historia', 'err');
+      return;
+    }
+
+    await refreshData();
+    showToast('Historia eliminada', 'err');
+  };
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -806,6 +839,22 @@ export function AdminPanel({ isOpen, onClose, onAuthChange }: AdminPanelProps) {
                     >
                       <User className="w-4 h-4" />
                       Usuarios
+                    </button>
+                    <button
+                      onClick={() => setActiveTab('stories')}
+                      className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors relative ${
+                        activeTab === 'stories'
+                          ? 'border-fuchsia-600 text-fuchsia-600'
+                          : 'border-transparent text-gray-600 hover:text-fuchsia-600'
+                      }`}
+                    >
+                      <Upload className="w-4 h-4" />
+                      Historias
+                      {pendingStories > 0 && (
+                        <span className="ml-1 min-w-5 h-5 px-1 rounded-full bg-red-500 text-white text-xs flex items-center justify-center">
+                          {pendingStories}
+                        </span>
+                      )}
                     </button>
                   </div>
 
@@ -1069,6 +1118,103 @@ export function AdminPanel({ isOpen, onClose, onAuthChange }: AdminPanelProps) {
                                   </button>
                                 </div>
                               )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {activeTab === 'stories' && (
+                    <div className="space-y-4">
+                      {stories.length === 0 ? (
+                        <div className="text-center py-12">
+                          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-fuchsia-100 to-purple-100 flex items-center justify-center">
+                            <Upload className="w-8 h-8 text-fuchsia-400" />
+                          </div>
+                          <p className="text-gray-500">No hay historias de emprendimientos</p>
+                        </div>
+                      ) : (
+                        <div className="space-y-3">
+                          {stories.map((story) => (
+                            <div
+                              key={story.id}
+                              className={`border-2 rounded-xl overflow-hidden bg-white ${
+                                story.status === 'approved'
+                                  ? 'border-green-200'
+                                  : story.status === 'rejected'
+                                    ? 'border-red-200'
+                                    : 'border-fuchsia-200'
+                              }`}
+                            >
+                              <div className="grid md:grid-cols-[220px_1fr] gap-4 p-4">
+                                <img src={story.imageUrl} alt={story.title} className="w-full h-48 md:h-full object-cover rounded-xl bg-gray-100" />
+                                <div className="space-y-3">
+                                  <div className="flex items-start justify-between gap-3">
+                                    <div>
+                                      <h4 className="font-bold text-gray-800 text-lg">{story.title}</h4>
+                                      <p className="text-xs text-gray-500">
+                                        {story.clientName} · {new Date(story.createdAt).toLocaleDateString('es-CO')}
+                                      </p>
+                                    </div>
+                                    <span
+                                      className={`text-xs px-2 py-1 rounded-full font-medium ${
+                                        story.status === 'approved'
+                                          ? 'bg-green-100 text-green-700'
+                                          : story.status === 'rejected'
+                                            ? 'bg-red-100 text-red-700'
+                                            : 'bg-yellow-100 text-yellow-700'
+                                      }`}
+                                    >
+                                      {story.status === 'approved' ? 'Aprobada' : story.status === 'rejected' ? 'Rechazada' : 'Pendiente'}
+                                    </span>
+                                  </div>
+
+                                  <p className="text-sm text-gray-700">{story.description}</p>
+
+                                  {story.adminNotes && (
+                                    <p className="text-xs text-gray-500 bg-gray-50 border border-gray-100 rounded-lg p-2">
+                                      Nota admin: {story.adminNotes}
+                                    </p>
+                                  )}
+
+                                  {story.status === 'pending' && (
+                                    <div className="space-y-2 pt-2 border-t border-gray-100">
+                                      <textarea
+                                        value={storyNotes[story.id] || ''}
+                                        onChange={(event) => setStoryNotes((prev) => ({ ...prev, [story.id]: event.target.value }))}
+                                        placeholder="Nota opcional para el cliente..."
+                                        rows={2}
+                                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-fuchsia-500 focus:border-transparent outline-none resize-none"
+                                      />
+                                      <div className="flex flex-wrap gap-2">
+                                        <button
+                                          onClick={() => handleReviewStory(story.id, 'approved')}
+                                          className="px-3 py-2 rounded-lg bg-green-600 text-white text-sm font-medium hover:bg-green-700 flex items-center gap-2"
+                                        >
+                                          <CheckCircle className="w-4 h-4" />
+                                          Aprobar
+                                        </button>
+                                        <button
+                                          onClick={() => handleReviewStory(story.id, 'rejected')}
+                                          className="px-3 py-2 rounded-lg bg-red-600 text-white text-sm font-medium hover:bg-red-700 flex items-center gap-2"
+                                        >
+                                          <X className="w-4 h-4" />
+                                          Rechazar
+                                        </button>
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  <button
+                                    onClick={() => handleDeleteStory(story.id)}
+                                    className="px-3 py-2 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 text-sm font-medium flex items-center gap-2"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                    Eliminar
+                                  </button>
+                                </div>
+                              </div>
                             </div>
                           ))}
                         </div>

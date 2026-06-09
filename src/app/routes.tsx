@@ -10,6 +10,7 @@ import { ClientPortal } from './pages/ClientPortal';
 import { ProductCatalog } from './pages/ProductCatalog';
 import { ClientMessages } from './pages/ClientMessages';
 import { ClientProfile } from './pages/ClientProfile';
+import { StorySubmission } from './pages/StorySubmission';
 import { NotFound } from './pages/NotFound';
 
 export const router = createBrowserRouter([
@@ -48,6 +49,7 @@ export const router = createBrowserRouter([
       { index: true, Component: ProductCatalog },
       { path: 'productos', Component: ProductCatalog },
       { path: 'mensajes', Component: ClientMessages },
+      { path: 'historia', Component: StorySubmission },
       { path: 'perfil', Component: ClientProfile },
     ],
   },

@@ -1,5 +1,15 @@
 import { useEffect, useState } from 'react';
-import { clientsService, productsService, mediaService, messagesService, type Client, type Product, type Message } from '../services/supabase';
+import {
+  clientsService,
+  productsService,
+  mediaService,
+  messagesService,
+  storiesService,
+  type Client,
+  type Product,
+  type Message,
+  type EntrepreneurStory,
+} from '../services/supabase';
 
 // Hook para sincronizar clientes de localStorage a Supabase
 export function useSyncClients() {
@@ -195,4 +205,28 @@ export function useSupabaseMessages(clientId?: string) {
   }, [clientId]);
 
   return { messages, loading, refresh: loadMessages };
+}
+
+export function useSupabaseStories(options?: { approvedOnly?: boolean; clientId?: string }) {
+  const [stories, setStories] = useState<EntrepreneurStory[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const loadStories = async () => {
+    setLoading(true);
+    const data = options?.clientId
+      ? await storiesService.getByClientId(options.clientId)
+      : options?.approvedOnly
+        ? await storiesService.getApproved()
+        : await storiesService.getAll();
+    setStories(data);
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    loadStories();
+    const interval = setInterval(loadStories, 3000);
+    return () => clearInterval(interval);
+  }, [options?.approvedOnly, options?.clientId]);
+
+  return { stories, loading, refresh: loadStories };
 }

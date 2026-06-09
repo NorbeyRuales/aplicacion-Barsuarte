@@ -12,11 +12,12 @@ if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 export const STORAGE_BUCKET = 'product-media';
+export const STORY_STORAGE_BUCKET = 'story-media';
 
-function getStoragePathFromPublicUrl(url: string): string | null {
+function getStoragePathFromPublicUrl(url: string, bucket = STORAGE_BUCKET): string | null {
   if (!url || url.startsWith('data:')) return null;
 
-  const marker = `/storage/v1/object/public/${STORAGE_BUCKET}/`;
+  const marker = `/storage/v1/object/public/${bucket}/`;
   const markerIndex = url.indexOf(marker);
   if (markerIndex === -1) return null;
 
@@ -30,14 +31,14 @@ function getStoragePathFromPublicUrl(url: string): string | null {
   }
 }
 
-async function deleteFilesFromStorage(urls: string[]): Promise<void> {
+async function deleteFilesFromStorage(urls: string[], bucket = STORAGE_BUCKET): Promise<void> {
   const paths = Array.from(
-    new Set(urls.map(getStoragePathFromPublicUrl).filter((path): path is string => Boolean(path)))
+    new Set(urls.map((url) => getStoragePathFromPublicUrl(url, bucket)).filter((path): path is string => Boolean(path)))
   );
 
   if (paths.length === 0) return;
 
-  const { error } = await supabase.storage.from(STORAGE_BUCKET).remove(paths);
+  const { error } = await supabase.storage.from(bucket).remove(paths);
   if (error) {
     console.error('Error deleting files from Supabase Storage:', error);
   }
@@ -58,6 +59,26 @@ export async function uploadFileToStorage(file: File): Promise<string | null> {
 
   const publicUrlResult = supabase.storage
     .from(STORAGE_BUCKET)
+    .getPublicUrl(filePath);
+
+  return publicUrlResult.data.publicUrl;
+}
+
+export async function uploadStoryImageToStorage(file: File): Promise<string | null> {
+  const sanitizedFilename = file.name.replace(/[^a-zA-Z0-9_.-]/g, '_');
+  const filePath = `stories/${Date.now()}-${Math.random().toString(36).slice(2)}-${sanitizedFilename}`;
+
+  const { error: uploadError } = await supabase.storage
+    .from(STORY_STORAGE_BUCKET)
+    .upload(filePath, file, { cacheControl: '3600', upsert: true });
+
+  if (uploadError) {
+    console.error('Error uploading story image to Supabase Storage:', uploadError);
+    return null;
+  }
+
+  const publicUrlResult = supabase.storage
+    .from(STORY_STORAGE_BUCKET)
     .getPublicUrl(filePath);
 
   return publicUrlResult.data.publicUrl;
@@ -118,6 +139,20 @@ const mapMessageRow = (row: any): Message => ({
   createdAt: row.created_at,
   adminResponse: row.admin_response || '',
   respondedAt: row.responded_at || undefined,
+});
+
+const mapStoryRow = (row: any): EntrepreneurStory => ({
+  id: row.id,
+  clientId: row.client_id,
+  clientName: row.client_name,
+  title: row.title,
+  description: row.description,
+  imageUrl: row.image_url,
+  status: row.status,
+  adminNotes: row.admin_notes || '',
+  createdAt: row.created_at,
+  reviewedAt: row.reviewed_at || undefined,
+  reviewedBy: row.reviewed_by || undefined,
 });
 
 // ==================== ADMINS ====================
@@ -510,6 +545,135 @@ export const mediaService = {
       return [];
     }
     return (data || []).map(mapProductMediaRow);
+  },
+};
+
+// ==================== HISTORIAS DE EMPRENDIMIENTOS ====================
+export interface EntrepreneurStory {
+  id: string;
+  clientId: string;
+  clientName: string;
+  title: string;
+  description: string;
+  imageUrl: string;
+  status: 'pending' | 'approved' | 'rejected';
+  adminNotes?: string;
+  createdAt: string;
+  reviewedAt?: string;
+  reviewedBy?: string;
+}
+
+export const storiesService = {
+  async getApproved(): Promise<EntrepreneurStory[]> {
+    const { data, error } = await supabase
+      .from('entrepreneur_stories')
+      .select('*')
+      .eq('status', 'approved')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching approved stories:', error);
+      return [];
+    }
+    return (data || []).map(mapStoryRow);
+  },
+
+  async getAll(): Promise<EntrepreneurStory[]> {
+    const { data, error } = await supabase
+      .from('entrepreneur_stories')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching stories:', error);
+      return [];
+    }
+    return (data || []).map(mapStoryRow);
+  },
+
+  async getByClientId(clientId: string): Promise<EntrepreneurStory[]> {
+    const { data, error } = await supabase
+      .from('entrepreneur_stories')
+      .select('*')
+      .eq('client_id', clientId)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching client stories:', error);
+      return [];
+    }
+    return (data || []).map(mapStoryRow);
+  },
+
+  async create(story: Omit<EntrepreneurStory, 'id' | 'createdAt' | 'status'>): Promise<EntrepreneurStory | null> {
+    const { data, error } = await supabase
+      .from('entrepreneur_stories')
+      .insert([{
+        client_id: story.clientId,
+        client_name: story.clientName,
+        title: story.title,
+        description: story.description,
+        image_url: story.imageUrl,
+        status: 'pending',
+        admin_notes: story.adminNotes || null,
+        reviewed_at: null,
+        reviewed_by: null,
+        created_at: new Date().toISOString(),
+      }])
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error creating story:', error);
+      return null;
+    }
+    return data ? mapStoryRow(data) : null;
+  },
+
+  async review(id: string, status: 'approved' | 'rejected', reviewedBy?: string, adminNotes?: string): Promise<EntrepreneurStory | null> {
+    const { data, error } = await supabase
+      .from('entrepreneur_stories')
+      .update({
+        status,
+        admin_notes: adminNotes || null,
+        reviewed_at: new Date().toISOString(),
+        reviewed_by: reviewedBy || null,
+      })
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error reviewing story:', error);
+      return null;
+    }
+    return data ? mapStoryRow(data) : null;
+  },
+
+  async delete(id: string): Promise<boolean> {
+    const { data: story, error: fetchError } = await supabase
+      .from('entrepreneur_stories')
+      .select('image_url')
+      .eq('id', id)
+      .single();
+
+    if (fetchError) {
+      console.error('Error fetching story before delete:', fetchError);
+      return false;
+    }
+
+    await deleteFilesFromStorage(story ? [story.image_url] : [], STORY_STORAGE_BUCKET);
+
+    const { error } = await supabase
+      .from('entrepreneur_stories')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      console.error('Error deleting story:', error);
+      return false;
+    }
+    return true;
   },
 };
 
