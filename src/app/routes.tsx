@@ -1,4 +1,4 @@
-import { createBrowserRouter } from 'react-router';
+import { Navigate, createBrowserRouter } from 'react-router';
 import { MainSite } from './pages/MainSite';
 import { NosotrosPage } from './pages/NosotrosPage';
 import { ProductosPage } from './pages/ProductosPage';
@@ -7,7 +7,6 @@ import { MisionPage } from './pages/MisionPage';
 import { TrayectoriaPage } from './pages/TrayectoriaPage';
 import { ContactoPage } from './pages/ContactoPage';
 import { ClientPortal } from './pages/ClientPortal';
-import { ProductCatalog } from './pages/ProductCatalog';
 import { ClientMessages } from './pages/ClientMessages';
 import { ClientProfile } from './pages/ClientProfile';
 import { StorySubmission } from './pages/StorySubmission';
@@ -46,8 +45,8 @@ export const router = createBrowserRouter([
     path: '/clientes',
     Component: ClientPortal,
     children: [
-      { index: true, Component: ProductCatalog },
-      { path: 'productos', Component: ProductCatalog },
+      { index: true, element: <Navigate to="/" replace /> },
+      { path: 'productos', element: <Navigate to="/productos" replace /> },
       { path: 'mensajes', Component: ClientMessages },
       { path: 'historia', Component: StorySubmission },
       { path: 'perfil', Component: ClientProfile },

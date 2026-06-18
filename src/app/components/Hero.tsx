@@ -1,6 +1,6 @@
 import { motion } from 'motion/react';
 import { Sparkles, ArrowRight } from 'lucide-react';
-import { useNavigate } from 'react-router';
+import { Link } from 'react-router';
 
 const quickLinks = [
   { label: 'Nosotros', path: '/nosotros' },
@@ -11,11 +11,10 @@ const quickLinks = [
 ];
 
 export function Hero() {
-  const navigate = useNavigate();
   return (
     <div id="inicio" className="relative min-h-screen flex items-center justify-center overflow-hidden bg-gradient-to-br from-fuchsia-600 via-purple-500 to-violet-600">
       {/* Animated background pattern */}
-      <div className="absolute inset-0 opacity-20">
+      <div className="pointer-events-none absolute inset-0 opacity-20">
         <div className="absolute inset-0" style={{
           backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.4'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
         }} />
@@ -102,14 +101,14 @@ export function Hero() {
           className="flex flex-wrap items-center justify-center gap-3 mt-2"
         >
           {quickLinks.map((link) => (
-            <button
+            <Link
               key={link.path}
-              onClick={() => navigate(link.path)}
+              to={link.path}
               className="flex items-center gap-1.5 px-5 py-2.5 rounded-full bg-white/15 hover:bg-white/25 text-white border border-white/30 hover:border-white/60 transition-all duration-200 backdrop-blur-sm text-sm font-medium"
             >
               {link.label}
               <ArrowRight className="w-3.5 h-3.5" />
-            </button>
+            </Link>
           ))}
         </motion.div>
       </div>

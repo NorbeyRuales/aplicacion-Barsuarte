@@ -1,11 +1,11 @@
-import { useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router';
 import { motion } from 'motion/react';
-import { ArrowLeft, Lock, Images } from 'lucide-react';
+import { ArrowLeft, Lock, Images, MessageCircle } from 'lucide-react';
 import { Navbar } from '../components/Navbar';
 import { Footer } from '../components/Footer';
 import { PageHero } from '../components/PageHero';
 import { useSupabaseProducts } from '../../hooks/useSupabase';
+import { storeProductInquiry } from '../productInquiry';
 
 const categoryConfig = {
   'porta-llaves': {
@@ -55,13 +55,11 @@ export function CategoryPage() {
     ? categoryConfig[category as keyof typeof categoryConfig]
     : null;
 
-  // Filtrar productos por categoría (basado en tags o nombre)
+  // Filtrar productos por la categoría guardada por el administrador.
   const categoryProducts = products.filter((item) => item.category === category);
-  const handleProductClick = () => {
-    const savedClient = localStorage.getItem('barsuarte_current_client');
-    if (!savedClient) {
-      navigate('/clientes', { replace: true });
-    }
+  const startProductInquiry = (product: (typeof products)[number]) => {
+    storeProductInquiry(product);
+    navigate('/clientes/mensajes');
   };
 
   if (!config) {
@@ -124,7 +122,6 @@ export function CategoryPage() {
                       animate={{ opacity: 1, scale: 1 }}
                       transition={{ duration: 0.5, delay: index * 0.08 }}
                       className="group relative overflow-hidden rounded-2xl shadow-lg hover:shadow-2xl hover:shadow-fuchsia-200 transition-all duration-300"
-                      onClick={handleProductClick}
                     >
                       {product.media?.[0]?.type === 'video' ? (
                         <video src={product.media?.[0]?.dataUrl} className="w-full h-80 object-cover group-hover:scale-110 transition-transform duration-500" />
@@ -145,6 +142,13 @@ export function CategoryPage() {
                             {product.price}
                           </p>
                         )}
+                        <button
+                          onClick={() => startProductInquiry(product)}
+                          className="mt-3 w-full px-4 py-2 rounded-lg bg-gradient-to-r from-fuchsia-600 to-purple-600 text-white text-sm font-medium hover:shadow-lg hover:shadow-fuchsia-200 transition-all flex items-center justify-center gap-2"
+                        >
+                          <MessageCircle className="w-4 h-4" />
+                          Consultar
+                        </button>
                       </div>
                     </motion.div>
                   ))}

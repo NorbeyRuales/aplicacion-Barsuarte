@@ -34,11 +34,12 @@ import {
   type Message,
   type EntrepreneurStory,
 } from '../../services/supabase';
+import { ADMIN_SESSION_KEY, notifySessionChanged } from '../session';
 
 const ADMINS_KEY = 'barsuarte_admins';
 const PRODUCTS_KEY = 'barsuarte_products';
 const LEGACY_MEDIA_KEY = 'barsuarte_media';
-const SESSION_KEY = 'barsuarte_admin_session';
+const SESSION_KEY = ADMIN_SESSION_KEY;
 const MESSAGES_KEY = 'barsuarte_messages';
 const CLIENTS_KEY = 'barsuarte_clients';
 
@@ -357,6 +358,7 @@ export function AdminPanel({ isOpen, onClose, onAuthChange }: AdminPanelProps) {
 
         setAuthenticated(true);
         localStorage.setItem(SESSION_KEY, email);
+        notifySessionChanged();
         setLoginError('');
         setLoginEmail('');
         setLoginPassword('');
@@ -370,6 +372,7 @@ export function AdminPanel({ isOpen, onClose, onAuthChange }: AdminPanelProps) {
   const handleLogout = () => {
     setAuthenticated(false);
     localStorage.removeItem(SESSION_KEY);
+    notifySessionChanged();
     onClose();
   };
 

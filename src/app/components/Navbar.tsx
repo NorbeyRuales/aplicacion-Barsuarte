@@ -1,7 +1,15 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Menu, X, Settings, Sparkles, UserCircle2 } from 'lucide-react';
-import { useNavigate, useLocation } from 'react-router';
+import { LogOut, Menu, Settings, Sparkles, UserCircle2, X } from 'lucide-react';
+import { Link, useNavigate, useLocation } from 'react-router';
+import {
+  CLIENT_PORTAL_ROUTE,
+  CLIENT_PROFILE_ROUTE,
+  HOME_ROUTE,
+  SESSION_CHANGED_EVENT,
+  clearAppSession,
+  readAppSession,
+} from '../session';
 
 const navLinks = [
   { label: 'Inicio', path: '/' },
@@ -12,18 +20,15 @@ const navLinks = [
   { label: 'Contacto', path: '/contacto' },
 ];
 
-interface NavbarProps {
-  onAdminClick?: () => void;
-  isAdmin?: boolean;
-}
-
-export function Navbar({ onAdminClick, isAdmin }: NavbarProps) {
+export function Navbar() {
   const navigate = useNavigate();
   const location = useLocation();
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [session, setSession] = useState(readAppSession);
 
-  const isHome = location.pathname === '/';
+  const isHome = location.pathname === HOME_ROUTE;
+  const canOpenAdmin = session.isAdmin;
 
   useEffect(() => {
     const handler = () => setScrolled(window.scrollY > 50);
@@ -31,12 +36,34 @@ export function Navbar({ onAdminClick, isAdmin }: NavbarProps) {
     return () => window.removeEventListener('scroll', handler);
   }, []);
 
+  useEffect(() => {
+    const syncSession = () => setSession(readAppSession());
+
+    syncSession();
+    window.addEventListener(SESSION_CHANGED_EVENT, syncSession);
+    window.addEventListener('storage', syncSession);
+
+    return () => {
+      window.removeEventListener(SESSION_CHANGED_EVENT, syncSession);
+      window.removeEventListener('storage', syncSession);
+    };
+  }, []);
+
   // Always show solid bg on non-home pages
   const solidBg = scrolled || !isHome;
 
-  const handleLink = (path: string) => {
+  const portalRoute = session.isLoggedIn ? CLIENT_PROFILE_ROUTE : CLIENT_PORTAL_ROUTE;
+
+  const handleAdminClick = () => {
     setMobileOpen(false);
-    navigate(path);
+    navigate(`${CLIENT_PROFILE_ROUTE}?admin=1`);
+  };
+
+  const handleLogout = () => {
+    clearAppSession();
+    setSession(readAppSession());
+    setMobileOpen(false);
+    navigate(HOME_ROUTE);
   };
 
   return (
@@ -53,8 +80,9 @@ export function Navbar({ onAdminClick, isAdmin }: NavbarProps) {
       >
         <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
           {/* Logo */}
-          <button
-            onClick={() => handleLink('/')}
+          <Link
+            to={HOME_ROUTE}
+            onClick={() => setMobileOpen(false)}
             className="flex items-center gap-2 group"
           >
             <div className={`w-9 h-9 rounded-full overflow-hidden flex items-center justify-center transition-all duration-300 ${solidBg ? 'bg-white' : 'bg-white/20 backdrop-blur-sm border border-white/40'}`}>
@@ -89,16 +117,17 @@ export function Navbar({ onAdminClick, isAdmin }: NavbarProps) {
                 Naturalidad y Color
               </span>
             </div>
-          </button>
+          </Link>
 
           {/* Desktop links */}
           <div className="hidden md:flex items-center gap-1">
             {navLinks.map((link) => {
               const active = location.pathname === link.path;
               return (
-                <button
+                <Link
                   key={link.path}
-                  onClick={() => handleLink(link.path)}
+                  to={link.path}
+                  onClick={() => setMobileOpen(false)}
                   className={`px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                     active
                       ? solidBg
@@ -110,15 +139,16 @@ export function Navbar({ onAdminClick, isAdmin }: NavbarProps) {
                   }`}
                 >
                   {link.label}
-                </button>
+                </Link>
               );
             })}
           </div>
 
           {/* Client Portal + Admin button + mobile toggle */}
           <div className="flex items-center gap-2">
-            <button
-              onClick={() => navigate('/clientes')}
+            <Link
+              to={portalRoute}
+              onClick={() => setMobileOpen(false)}
               className={`hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 ${
                 solidBg
                   ? 'border border-purple-300 text-purple-600 hover:bg-purple-50'
@@ -126,13 +156,13 @@ export function Navbar({ onAdminClick, isAdmin }: NavbarProps) {
               }`}
             >
               <UserCircle2 className="w-3.5 h-3.5" />
-              Portal Clientes
-            </button>
-            {onAdminClick && (
+              {session.isLoggedIn ? 'Mi portal' : 'Portal Clientes'}
+            </Link>
+            {canOpenAdmin && (
               <button
-                onClick={onAdminClick}
+                onClick={handleAdminClick}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 ${
-                  isAdmin
+                  canOpenAdmin
                     ? 'bg-fuchsia-600 text-white shadow-md shadow-fuchsia-300'
                     : solidBg
                     ? 'border border-fuchsia-300 text-fuchsia-600 hover:bg-fuchsia-50'
@@ -140,12 +170,26 @@ export function Navbar({ onAdminClick, isAdmin }: NavbarProps) {
                 }`}
               >
                 <Settings className="w-3.5 h-3.5" />
-                {isAdmin ? 'Admin' : 'Acceso'}
+                Panel Admin
+              </button>
+            )}
+            {session.isLoggedIn && (
+              <button
+                onClick={handleLogout}
+                className={`hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 ${
+                  solidBg
+                    ? 'text-gray-600 hover:text-red-600 hover:bg-red-50'
+                    : 'text-white/90 hover:text-white hover:bg-white/10'
+                }`}
+              >
+                <LogOut className="w-3.5 h-3.5" />
+                Salir
               </button>
             )}
 
             <button
               onClick={() => setMobileOpen((v) => !v)}
+              aria-label={mobileOpen ? 'Cerrar menú' : 'Abrir menú'}
               className={`md:hidden p-2 rounded-lg transition-colors ${solidBg ? 'text-gray-700 hover:bg-gray-100' : 'text-white hover:bg-white/10'}`}
             >
               {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
@@ -168,9 +212,10 @@ export function Navbar({ onAdminClick, isAdmin }: NavbarProps) {
               {navLinks.map((link) => {
                 const active = location.pathname === link.path;
                 return (
-                  <button
+                  <Link
                     key={link.path}
-                    onClick={() => handleLink(link.path)}
+                    to={link.path}
+                    onClick={() => setMobileOpen(false)}
                     className={`flex items-center gap-2 px-4 py-3 rounded-xl transition-colors text-left ${
                       active
                         ? 'bg-fuchsia-100 text-fuchsia-700'
@@ -179,19 +224,35 @@ export function Navbar({ onAdminClick, isAdmin }: NavbarProps) {
                   >
                     <Sparkles className="w-4 h-4 text-fuchsia-400" />
                     {link.label}
-                  </button>
+                  </Link>
                 );
               })}
-              <button
-                onClick={() => {
-                  setMobileOpen(false);
-                  navigate('/clientes');
-                }}
+              <Link
+                to={portalRoute}
+                onClick={() => setMobileOpen(false)}
                 className="flex items-center gap-2 px-4 py-3 rounded-xl text-purple-600 bg-purple-50 hover:bg-purple-100 transition-colors text-left md:hidden"
               >
                 <UserCircle2 className="w-4 h-4" />
-                Portal Clientes
-              </button>
+                {session.isLoggedIn ? 'Mi portal' : 'Portal Clientes'}
+              </Link>
+              {canOpenAdmin && (
+                <button
+                  onClick={handleAdminClick}
+                  className="flex items-center gap-2 px-4 py-3 rounded-xl text-fuchsia-600 bg-fuchsia-50 hover:bg-fuchsia-100 transition-colors text-left md:hidden"
+                >
+                  <Settings className="w-4 h-4" />
+                  Panel Admin
+                </button>
+              )}
+              {session.isLoggedIn && (
+                <button
+                  onClick={handleLogout}
+                  className="flex items-center gap-2 px-4 py-3 rounded-xl text-red-600 bg-red-50 hover:bg-red-100 transition-colors text-left md:hidden"
+                >
+                  <LogOut className="w-4 h-4" />
+                  Salir
+                </button>
+              )}
             </div>
           </motion.div>
         )}

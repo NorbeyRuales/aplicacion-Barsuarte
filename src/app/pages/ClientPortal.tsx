@@ -1,24 +1,27 @@
 import { useState, useEffect } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
-import { User, Lock, ShoppingBag, MessageSquare, LogOut, Home, Eye, EyeOff, Settings, Upload } from 'lucide-react';
+import { User, Lock, MessageSquare, LogOut, Home, Eye, EyeOff, Settings, Upload } from 'lucide-react';
 import { clientsService, adminsService, type Client } from '../../services/supabase';
 import { AdminPanel } from '../components/AdminPanel';
-
-const CURRENT_CLIENT_KEY = 'barsuarte_current_client';
-const POST_AUTH_REDIRECT_KEY = 'barsuarte_post_auth_redirect';
-
-const getPostAuthRedirect = () => {
-  const redirect = localStorage.getItem(POST_AUTH_REDIRECT_KEY);
-  localStorage.removeItem(POST_AUTH_REDIRECT_KEY);
-  return redirect || '/clientes/productos';
-};
+import {
+  CLIENT_PORTAL_ROUTE,
+  CLIENT_PROFILE_ROUTE,
+  HOME_ROUTE,
+  clearAppSession,
+  readAppSession,
+  rememberPostAuthPath,
+  resolvePostAuthRedirect,
+  saveAppSession,
+} from '../session';
 
 export function ClientPortal() {
   const navigate = useNavigate();
   const location = useLocation();
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [currentClient, setCurrentClient] = useState<Client | null>(null);
+  const [initialSession] = useState(readAppSession);
+  const [isLoggedIn, setIsLoggedIn] = useState(initialSession.isLoggedIn);
+  const [currentClient, setCurrentClient] = useState<Client | null>(initialSession.client);
+  const [isAdmin, setIsAdmin] = useState(initialSession.isAdmin);
   const [showLogin, setShowLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
 
@@ -31,29 +34,42 @@ export function ClientPortal() {
   const [registerPhone, setRegisterPhone] = useState('');
   const [registerPassword, setRegisterPassword] = useState('');
   const [error, setError] = useState('');
-  const [isAdmin, setIsAdmin] = useState(false);
   const [adminOpen, setAdminOpen] = useState(false);
 
   useEffect(() => {
-    const savedClient = localStorage.getItem(CURRENT_CLIENT_KEY);
-    if (savedClient) {
-      const clientObj = JSON.parse(savedClient) as Client;
-      setCurrentClient(clientObj);
-      setIsLoggedIn(true);
-      adminsService.getByEmail(clientObj.email).then((admin) => {
-        setIsAdmin(!!admin);
+    const session = readAppSession();
+    if (!session.client) return;
+
+    setCurrentClient(session.client);
+    setIsLoggedIn(true);
+    setIsAdmin(session.isAdmin);
+
+    if (!session.isAdmin) {
+      adminsService.getByEmail(session.client.email).then((admin) => {
+        if (!admin) return;
+        saveAppSession(session.client as Client, 'admin');
+        setIsAdmin(true);
       });
     }
   }, []);
 
   useEffect(() => {
-    const savedClient = localStorage.getItem(CURRENT_CLIENT_KEY);
+    const session = readAppSession();
 
-    if (!isLoggedIn && !savedClient && location.pathname !== '/clientes') {
-      localStorage.setItem(POST_AUTH_REDIRECT_KEY, location.pathname);
-      navigate('/clientes', { replace: true });
+    if (!isLoggedIn && !session.isLoggedIn && location.pathname !== CLIENT_PORTAL_ROUTE) {
+      rememberPostAuthPath(location.pathname);
+      navigate(CLIENT_PORTAL_ROUTE, { replace: true });
     }
   }, [isLoggedIn, location.pathname, navigate]);
+
+  useEffect(() => {
+    const shouldOpenAdmin = new URLSearchParams(location.search).get('admin') === '1';
+
+    if (shouldOpenAdmin && isLoggedIn && isAdmin) {
+      setAdminOpen(true);
+      navigate(location.pathname, { replace: true });
+    }
+  }, [isAdmin, isLoggedIn, location.pathname, location.search, navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -67,15 +83,13 @@ export function ClientPortal() {
     }
 
     const admin = await adminsService.getByEmail(email);
+    const role = admin ? 'admin' : 'client';
     setIsAdmin(!!admin);
-    if (admin) {
-      localStorage.setItem('barsuarte_admin_session', email);
-    }
-
     setCurrentClient(client);
     setIsLoggedIn(true);
-    localStorage.setItem(CURRENT_CLIENT_KEY, JSON.stringify(client));
-    navigate(getPostAuthRedirect());
+    saveAppSession(client, role);
+    resolvePostAuthRedirect(HOME_ROUTE);
+    navigate(HOME_ROUTE, { replace: true });
   };
 
   const handleRegister = async (e: React.FormEvent) => {
@@ -110,8 +124,9 @@ export function ClientPortal() {
     setIsAdmin(false);
     setCurrentClient(newClient);
     setIsLoggedIn(true);
-    localStorage.setItem(CURRENT_CLIENT_KEY, JSON.stringify(newClient));
-    navigate(getPostAuthRedirect());
+    saveAppSession(newClient, 'client');
+    resolvePostAuthRedirect(HOME_ROUTE);
+    navigate(HOME_ROUTE, { replace: true });
   };
 
   const handleLogout = () => {
@@ -119,8 +134,7 @@ export function ClientPortal() {
     setCurrentClient(null);
     setIsAdmin(false);
     setAdminOpen(false);
-    localStorage.removeItem(CURRENT_CLIENT_KEY);
-    localStorage.removeItem('barsuarte_admin_session');
+    clearAppSession();
     setLoginEmail('');
     setLoginPassword('');
     setRegisterName('');
@@ -128,7 +142,7 @@ export function ClientPortal() {
     setRegisterEmail('');
     setRegisterPhone('');
     setRegisterPassword('');
-    navigate('/clientes');
+    navigate(HOME_ROUTE);
   };
 
   if (!isLoggedIn) {
@@ -141,7 +155,7 @@ export function ClientPortal() {
         >
           {/* Back to home */}
           <button
-            onClick={() => navigate('/')}
+            onClick={() => navigate(HOME_ROUTE)}
             className="flex items-center gap-2 text-gray-600 hover:text-fuchsia-600 mb-6 transition-colors"
           >
             <Home className="w-4 h-4" />
@@ -260,6 +274,7 @@ export function ClientPortal() {
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
+                        aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
                         className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                       >
                         {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
@@ -351,6 +366,7 @@ export function ClientPortal() {
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
+                        aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
                         className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                       >
                         {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
@@ -417,18 +433,11 @@ export function ClientPortal() {
 
           <div className="flex items-center gap-3">
             <button
-              onClick={() => navigate('/')}
+              onClick={() => navigate(HOME_ROUTE)}
               className="flex items-center gap-2 px-3 py-2 text-sm text-gray-600 hover:text-fuchsia-600 hover:bg-fuchsia-50 rounded-lg transition-all"
             >
               <Home className="w-4 h-4" />
               Inicio
-            </button>
-            <button
-              onClick={() => navigate('/clientes/perfil')}
-              className="flex items-center gap-2 px-3 py-2 text-sm text-gray-600 hover:text-fuchsia-600 hover:bg-fuchsia-50 rounded-lg transition-all"
-            >
-              <User className="w-4 h-4" />
-              Perfil
             </button>
             {isAdmin && (
               <button
@@ -455,15 +464,15 @@ export function ClientPortal() {
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex gap-1">
             <button
-              onClick={() => navigate('/clientes/productos')}
+              onClick={() => navigate(CLIENT_PROFILE_ROUTE)}
               className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
-                location.pathname === '/clientes/productos' || location.pathname === '/clientes'
+                location.pathname === CLIENT_PROFILE_ROUTE || location.pathname === CLIENT_PORTAL_ROUTE
                   ? 'border-fuchsia-600 text-fuchsia-600'
                   : 'border-transparent text-gray-600 hover:text-fuchsia-600'
               }`}
             >
-              <ShoppingBag className="w-4 h-4" />
-              Catálogo de Productos
+              <User className="w-4 h-4" />
+              Perfil
             </button>
             <button
               onClick={() => navigate('/clientes/mensajes')}

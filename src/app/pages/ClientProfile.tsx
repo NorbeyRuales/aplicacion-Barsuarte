@@ -3,14 +3,13 @@ import { useOutletContext } from 'react-router';
 import { motion } from 'motion/react';
 import { User, Trash, Check } from 'lucide-react';
 import { clientsService, type Client as SupabaseClient } from '../../services/supabase';
+import { ADMIN_SESSION_KEY, saveAppSession } from '../session';
 
 interface OutletContext {
   client: SupabaseClient;
   setClient: (client: SupabaseClient | null) => void;
   logout: () => void;
 }
-
-const CURRENT_CLIENT_KEY = 'barsuarte_current_client';
 
 export function ClientProfile() {
   const { client, setClient, logout } = useOutletContext<OutletContext>();
@@ -46,7 +45,9 @@ export function ClientProfile() {
       return;
     }
 
-    localStorage.setItem(CURRENT_CLIENT_KEY, JSON.stringify(updatedClient));
+    const adminEmail = localStorage.getItem(ADMIN_SESSION_KEY);
+    const role = adminEmail && adminEmail.toLowerCase() === client.email.toLowerCase() ? 'admin' : 'client';
+    saveAppSession(updatedClient, role);
     setClient(updatedClient);
     setSuccess('Perfil actualizado correctamente');
     setTimeout(() => setSuccess(''), 3000);
@@ -62,7 +63,6 @@ export function ClientProfile() {
       return;
     }
 
-    localStorage.removeItem(CURRENT_CLIENT_KEY);
     logout();
   };
 
@@ -103,7 +103,7 @@ export function ClientProfile() {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Contraseña</label>
-              <input value={password} onChange={(e) => setPassword(e.target.value)} className="w-full px-4 py-3 border rounded-lg" />
+              <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full px-4 py-3 border rounded-lg" />
             </div>
 
             <div className="flex gap-3">

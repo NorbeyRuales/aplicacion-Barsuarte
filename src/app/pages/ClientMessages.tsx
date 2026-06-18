@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { motion } from 'motion/react';
 import { Send, MessageSquare, Clock, CheckCircle2, User } from 'lucide-react';
 import { useOutletContext } from 'react-router';
@@ -27,10 +27,6 @@ export function ClientMessages() {
       }
     } catch {}
   }, []);
-
-  useEffect(() => {
-    refresh();
-  }, [client.id, refresh]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

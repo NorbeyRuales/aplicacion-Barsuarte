@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { motion } from 'motion/react';
 import { ImageWithFallback } from './figma/ImageWithFallback';
-import { Play, Images, Lock } from 'lucide-react';
+import { MessageCircle, Play, Images, Lock } from 'lucide-react';
+import { useNavigate } from 'react-router';
 import { useSupabaseProducts } from '../../hooks/useSupabase';
+import { storeProductInquiry } from '../productInquiry';
 
 const defaultImages = [
   {
@@ -19,11 +21,8 @@ const defaultImages = [
   },
 ];
 
-interface GalleryProps {
-  onAdminClick?: () => void;
-}
-
-export function Gallery({ onAdminClick }: GalleryProps) {
+export function Gallery() {
+  const navigate = useNavigate();
   const { products = [] } = useSupabaseProducts();
   const [activeTab, setActiveTab] = useState<'all' | 'images' | 'videos'>('all');
 
@@ -31,6 +30,11 @@ export function Gallery({ onAdminClick }: GalleryProps) {
   const uploadedVideos = products.filter((product) => product.media?.some((item) => item.type === 'video'));
 
   const hasUploaded = products.length > 0;
+
+  const startProductInquiry = (product: (typeof products)[number]) => {
+    storeProductInquiry(product);
+    navigate('/clientes/mensajes');
+  };
 
   return (
     <section id="galeria" className="py-24 px-4 bg-white">
@@ -106,6 +110,13 @@ export function Gallery({ onAdminClick }: GalleryProps) {
                           {product.price}
                         </p>
                       )}
+                      <button
+                        onClick={() => startProductInquiry(product)}
+                        className="mt-3 w-full px-4 py-2 rounded-lg bg-gradient-to-r from-fuchsia-600 to-purple-600 text-white text-sm font-medium hover:shadow-lg hover:shadow-fuchsia-200 transition-all flex items-center justify-center gap-2"
+                      >
+                        <MessageCircle className="w-4 h-4" />
+                        Consultar
+                      </button>
                     </div>
                   </motion.div>
                 ))
