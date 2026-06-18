@@ -107,7 +107,7 @@ export function ClientProfile() {
             </div>
 
             <div className="flex gap-3">
-              <button type="submit" className="px-4 py-3 bg-fuchsia-600 text-white rounded-lg flex items-center gap-2"><Check className="w-4 h-4"/> Guardar cambios</button>
+              <button type="submit" className="px-4 py-3 bg-fuchsia-600 text-white rounded-lg flex items-center gap-2"><Check className="w-4 h-4"/> Actualizar Información</button>
               <button type="button" onClick={handleDelete} className="px-4 py-3 bg-red-50 text-red-600 rounded-lg flex items-center gap-2"><Trash className="w-4 h-4"/> Eliminar cuenta</button>
             </div>
           </form>
