@@ -1046,7 +1046,7 @@ export function AdminPanel({ isOpen, onClose, onAuthChange }: AdminPanelProps) {
                       </section>
 
                       <p className="text-xs text-gray-400 text-center pb-4">
-                        Los archivos y datos se guardan localmente en este dispositivo. Contraseña: <span className="bg-gray-100 px-1 rounded">barsuarte2024</span>
+                        © 2026 Barsuarte Artesanías. Todos los derechos reservados.
                       </p>
                     </div>
                   )}
