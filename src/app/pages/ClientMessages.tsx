@@ -14,7 +14,8 @@ export function ClientMessages() {
   const { messages, refresh } = useSupabaseMessages(client.id);
   const [subject, setSubject] = useState('');
   const [message, setMessage] = useState('');
-  const [showSuccess, setShowSuccess] = useState(false);
+  const [notice, setNotice] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     try {
@@ -30,25 +31,38 @@ export function ClientMessages() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setNotice(null);
 
-    const created = await messagesService.create({
-      clientId: client.id,
-      clientName: `${client.name} ${client.surname || ''}`.trim(),
-      subject,
-      message,
-      status: 'pending',
-    });
-
-    if (!created) {
+    if (!subject.trim() || !message.trim()) {
+      setNotice({ type: 'err', text: 'Completa el asunto y el mensaje.' });
       return;
     }
 
-    setSubject('');
-    setMessage('');
-    setShowSuccess(true);
-    refresh();
+    setSubmitting(true);
 
-    setTimeout(() => setShowSuccess(false), 3000);
+    try {
+      const created = await messagesService.create({
+        clientId: client.id,
+        clientName: `${client.name} ${client.surname || ''}`.trim(),
+        subject: subject.trim(),
+        message: message.trim(),
+        status: 'pending',
+      });
+
+      if (!created) {
+        setNotice({ type: 'err', text: 'No se pudo enviar el mensaje. Intenta de nuevo.' });
+        return;
+      }
+
+      await refresh();
+      setSubject('');
+      setMessage('');
+      setNotice({ type: 'ok', text: 'Mensaje enviado exitosamente' });
+
+      setTimeout(() => setNotice(null), 3000);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -69,14 +83,17 @@ export function ClientMessages() {
             </div>
           </div>
 
-          {showSuccess && (
+          {notice && (
             <motion.div
+              data-cy="message-notice"
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="bg-green-50 text-green-700 px-4 py-3 rounded-xl mb-4 flex items-center gap-2"
+              className={`px-4 py-3 rounded-xl mb-4 flex items-center gap-2 ${
+                notice.type === 'ok' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'
+              }`}
             >
               <CheckCircle2 className="w-5 h-5" />
-              Mensaje enviado exitosamente
+              {notice.text}
             </motion.div>
           )}
 
@@ -86,6 +103,7 @@ export function ClientMessages() {
                 Asunto
               </label>
               <input
+                data-cy="message-subject"
                 type="text"
                 value={subject}
                 onChange={(e) => setSubject(e.target.value)}
@@ -100,6 +118,7 @@ export function ClientMessages() {
                 Mensaje
               </label>
               <textarea
+                data-cy="message-body"
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
                 placeholder="Escribe tu consulta aquí..."
@@ -110,11 +129,13 @@ export function ClientMessages() {
             </div>
 
             <button
+              data-cy="send-message-button"
               type="submit"
-              className="w-full bg-gradient-to-r from-fuchsia-600 to-purple-600 text-white py-3 rounded-xl font-medium hover:shadow-lg hover:shadow-fuchsia-300 transition-all flex items-center justify-center gap-2"
+              disabled={submitting}
+              className="w-full bg-gradient-to-r from-fuchsia-600 to-purple-600 text-white py-3 rounded-xl font-medium hover:shadow-lg hover:shadow-fuchsia-300 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
             >
               <Send className="w-5 h-5" />
-              Enviar Mensaje
+              {submitting ? 'Enviando...' : 'Enviar Mensaje'}
             </button>
           </form>
         </div>
@@ -143,6 +164,7 @@ export function ClientMessages() {
               {messages.map((msg, index) => (
                 <motion.div
                   key={msg.id}
+                  data-cy="client-message-row"
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.05 }}
@@ -154,7 +176,7 @@ export function ClientMessages() {
                 >
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex-1">
-                      <h3 className="font-bold text-gray-800">{msg.subject}</h3>
+                      <h3 data-cy="client-message-subject" className="font-bold text-gray-800">{msg.subject}</h3>
                       <p className="text-xs text-gray-500 flex items-center gap-1 mt-1">
                         <Clock className="w-3 h-3" />
                         {new Date(msg.createdAt).toLocaleDateString('es-ES', {

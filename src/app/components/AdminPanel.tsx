@@ -715,7 +715,7 @@ export function AdminPanel({ isOpen, onClose, onAuthChange }: AdminPanelProps) {
             <div className="sticky top-0 bg-gradient-to-r from-fuchsia-600 to-purple-600 px-6 py-4 flex items-center justify-between z-10">
               <div className="flex items-center gap-2 text-white">
                 <Lock className="w-5 h-5" />
-                <h2 className="font-bold text-lg">Panel de Administración</h2>
+                <h2 data-cy="admin-panel-title" className="font-bold text-lg">Panel de Administración</h2>
               </div>
               <button onClick={onClose} className="text-white/80 hover:text-white p-1 rounded-lg hover:bg-white/10 transition-colors">
                 <X className="w-5 h-5" />
@@ -725,6 +725,7 @@ export function AdminPanel({ isOpen, onClose, onAuthChange }: AdminPanelProps) {
             <AnimatePresence>
               {toast && (
                 <motion.div
+                  data-cy="admin-toast"
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
@@ -751,6 +752,7 @@ export function AdminPanel({ isOpen, onClose, onAuthChange }: AdminPanelProps) {
 
                   <div className="space-y-4">
                     <input
+                      data-cy="admin-login-email"
                       type="email"
                       placeholder="Correo electrónico"
                       value={loginEmail}
@@ -759,6 +761,7 @@ export function AdminPanel({ isOpen, onClose, onAuthChange }: AdminPanelProps) {
                     />
                     <div className="relative">
                       <input
+                        data-cy="admin-login-password"
                         type={showPassword ? 'text' : 'password'}
                         placeholder="Contraseña"
                         value={loginPassword}
@@ -782,6 +785,7 @@ export function AdminPanel({ isOpen, onClose, onAuthChange }: AdminPanelProps) {
                     )}
 
                     <button
+                      data-cy="admin-login-submit"
                       onClick={handleLogin}
                       className="w-full py-3 bg-gradient-to-r from-fuchsia-600 to-purple-600 hover:from-fuchsia-700 hover:to-purple-700 text-white rounded-xl font-bold transition-all duration-200 shadow-lg shadow-fuchsia-200"
                     >
@@ -798,6 +802,7 @@ export function AdminPanel({ isOpen, onClose, onAuthChange }: AdminPanelProps) {
                     </div>
                     <button
                       onClick={handleLogout}
+                      data-cy="admin-panel-logout-button"
                       className="flex items-center gap-1.5 px-3 py-2 text-sm text-red-500 border border-red-200 rounded-lg hover:bg-red-50 transition-colors"
                     >
                       <LogOut className="w-4 h-4" /> Cerrar sesión
@@ -807,6 +812,7 @@ export function AdminPanel({ isOpen, onClose, onAuthChange }: AdminPanelProps) {
                   <div className="flex gap-2 border-b border-gray-200">
                     <button
                       onClick={() => setActiveTab('products')}
+                      data-cy="admin-products-tab"
                       className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
                         activeTab === 'products'
                           ? 'border-fuchsia-600 text-fuchsia-600'
@@ -818,6 +824,7 @@ export function AdminPanel({ isOpen, onClose, onAuthChange }: AdminPanelProps) {
                     </button>
                     <button
                       onClick={() => setActiveTab('messages')}
+                      data-cy="admin-messages-tab"
                       className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors relative ${
                         activeTab === 'messages'
                           ? 'border-fuchsia-600 text-fuchsia-600'
@@ -834,6 +841,7 @@ export function AdminPanel({ isOpen, onClose, onAuthChange }: AdminPanelProps) {
                     </button>
                     <button
                       onClick={() => setActiveTab('users')}
+                      data-cy="admin-users-tab"
                       className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
                         activeTab === 'users'
                           ? 'border-fuchsia-600 text-fuchsia-600'
@@ -845,6 +853,7 @@ export function AdminPanel({ isOpen, onClose, onAuthChange }: AdminPanelProps) {
                     </button>
                     <button
                       onClick={() => setActiveTab('stories')}
+                      data-cy="admin-stories-tab"
                       className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors relative ${
                         activeTab === 'stories'
                           ? 'border-fuchsia-600 text-fuchsia-600'
@@ -884,12 +893,14 @@ export function AdminPanel({ isOpen, onClose, onAuthChange }: AdminPanelProps) {
 
                         <div className="grid gap-3 md:grid-cols-2">
                           <input
+                            data-cy="admin-product-title"
                             value={productForm.title}
                             onChange={(event) => setProductForm((prev) => ({ ...prev, title: event.target.value }))}
                             placeholder="Nombre del producto"
                             className="px-3 py-2 border rounded-lg"
                           />
                           <select
+                            data-cy="admin-product-category"
                             value={productForm.category}
                             onChange={(event) => setProductForm((prev) => ({ ...prev, category: event.target.value as ProductCategory }))}
                             className="px-3 py-2 border rounded-lg bg-white"
@@ -904,6 +915,7 @@ export function AdminPanel({ isOpen, onClose, onAuthChange }: AdminPanelProps) {
                         </div>
 
                         <input
+                          data-cy="admin-product-price"
                           value={productForm.price}
                           onChange={(event) => setProductForm((prev) => ({ ...prev, price: event.target.value }))}
                           placeholder="Precio"
@@ -911,6 +923,7 @@ export function AdminPanel({ isOpen, onClose, onAuthChange }: AdminPanelProps) {
                         />
 
                         <textarea
+                          data-cy="admin-product-description"
                           value={productForm.description}
                           onChange={(event) => setProductForm((prev) => ({ ...prev, description: event.target.value }))}
                           placeholder="Descripción del producto"
@@ -919,6 +932,7 @@ export function AdminPanel({ isOpen, onClose, onAuthChange }: AdminPanelProps) {
                         />
 
                         <input
+                          data-cy="admin-product-media"
                           ref={imageInputRef}
                           type="file"
                           accept="image/*,video/*"
@@ -949,6 +963,7 @@ export function AdminPanel({ isOpen, onClose, onAuthChange }: AdminPanelProps) {
 
                         <div className="flex gap-3 pt-2">
                           <button
+                            data-cy="admin-save-product-button"
                             onClick={handleSaveProduct}
                             disabled={uploading}
                             className="flex-1 px-4 py-3 bg-gradient-to-r from-fuchsia-600 to-purple-600 text-white rounded-lg font-bold hover:shadow-lg hover:shadow-fuchsia-300 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
@@ -981,7 +996,7 @@ export function AdminPanel({ isOpen, onClose, onAuthChange }: AdminPanelProps) {
                             {groupedProducts.map((product) => {
                               const cover = product.media[0];
                               return (
-                                <div key={product.id} className="rounded-2xl border border-gray-100 overflow-hidden bg-white shadow-sm">
+                                <div key={product.id} data-cy="admin-product-row" className="rounded-2xl border border-gray-100 overflow-hidden bg-white shadow-sm">
                                   <div className="grid md:grid-cols-[160px_1fr] gap-4 p-4">
                                     <div className="rounded-xl overflow-hidden bg-gray-100 h-40 md:h-full min-h-[160px]">
                                       {cover ? (
@@ -998,7 +1013,7 @@ export function AdminPanel({ isOpen, onClose, onAuthChange }: AdminPanelProps) {
                                     <div className="space-y-3">
                                       <div className="flex items-start justify-between gap-3">
                                         <div>
-                                          <h4 className="font-bold text-gray-800 text-lg">{product.title}</h4>
+                                          <h4 data-cy="admin-product-row-title" className="font-bold text-gray-800 text-lg">{product.title}</h4>
                                           <p className="text-sm text-gray-500">{product.description || 'Sin descripción'}</p>
                                         </div>
                                         <div className="text-right">
@@ -1024,12 +1039,14 @@ export function AdminPanel({ isOpen, onClose, onAuthChange }: AdminPanelProps) {
 
                                       <div className="flex gap-2 pt-1">
                                         <button
+                                          data-cy="admin-edit-product-button"
                                           onClick={() => handleEditProduct(product)}
                                           className="px-3 py-2 rounded-lg border border-fuchsia-200 text-fuchsia-700 hover:bg-fuchsia-50 text-sm font-medium"
                                         >
                                           Editar
                                         </button>
                                         <button
+                                          data-cy="admin-delete-product-button"
                                           onClick={() => handleDeleteProduct(product.id)}
                                           className="px-3 py-2 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 text-sm font-medium"
                                         >
@@ -1065,6 +1082,7 @@ export function AdminPanel({ isOpen, onClose, onAuthChange }: AdminPanelProps) {
                           {messages.map((message) => (
                             <div
                               key={message.id}
+                              data-cy="admin-message-row"
                               className={`border-2 rounded-xl p-4 ${
                                 message.status === 'answered' ? 'border-green-200 bg-green-50' : 'border-fuchsia-200 bg-fuchsia-50'
                               }`}
@@ -1106,6 +1124,7 @@ export function AdminPanel({ isOpen, onClose, onAuthChange }: AdminPanelProps) {
                               ) : (
                                 <div className="mt-3 pt-3 border-t border-fuchsia-300">
                                   <textarea
+                                    data-cy="admin-message-response"
                                     value={responses[message.id] || ''}
                                     onChange={(event) => setResponses((prev) => ({ ...prev, [message.id]: event.target.value }))}
                                     placeholder="Escribe tu respuesta al cliente..."
@@ -1113,6 +1132,7 @@ export function AdminPanel({ isOpen, onClose, onAuthChange }: AdminPanelProps) {
                                     className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-fuchsia-500 focus:border-transparent outline-none resize-none mb-2"
                                   />
                                   <button
+                                    data-cy="admin-send-response-button"
                                     onClick={() => handleRespond(message.id)}
                                     className="w-full bg-gradient-to-r from-fuchsia-600 to-purple-600 text-white py-2 rounded-lg text-sm font-medium hover:shadow-lg hover:shadow-fuchsia-300 transition-all flex items-center justify-center gap-2"
                                   >
@@ -1142,6 +1162,7 @@ export function AdminPanel({ isOpen, onClose, onAuthChange }: AdminPanelProps) {
                           {stories.map((story) => (
                             <div
                               key={story.id}
+                              data-cy="admin-story-row"
                               className={`border-2 rounded-xl overflow-hidden bg-white ${
                                 story.status === 'approved'
                                   ? 'border-green-200'
@@ -1155,7 +1176,7 @@ export function AdminPanel({ isOpen, onClose, onAuthChange }: AdminPanelProps) {
                                 <div className="space-y-3">
                                   <div className="flex items-start justify-between gap-3">
                                     <div>
-                                      <h4 className="font-bold text-gray-800 text-lg">{story.title}</h4>
+                                      <h4 data-cy="admin-story-title" className="font-bold text-gray-800 text-lg">{story.title}</h4>
                                       <p className="text-xs text-gray-500">
                                         {story.clientName} · {new Date(story.createdAt).toLocaleDateString('es-CO')}
                                       </p>
@@ -1184,6 +1205,7 @@ export function AdminPanel({ isOpen, onClose, onAuthChange }: AdminPanelProps) {
                                   {story.status === 'pending' && (
                                     <div className="space-y-2 pt-2 border-t border-gray-100">
                                       <textarea
+                                        data-cy="admin-story-note"
                                         value={storyNotes[story.id] || ''}
                                         onChange={(event) => setStoryNotes((prev) => ({ ...prev, [story.id]: event.target.value }))}
                                         placeholder="Nota opcional para el cliente..."
@@ -1192,6 +1214,7 @@ export function AdminPanel({ isOpen, onClose, onAuthChange }: AdminPanelProps) {
                                       />
                                       <div className="flex flex-wrap gap-2">
                                         <button
+                                          data-cy="admin-approve-story-button"
                                           onClick={() => handleReviewStory(story.id, 'approved')}
                                           className="px-3 py-2 rounded-lg bg-green-600 text-white text-sm font-medium hover:bg-green-700 flex items-center gap-2"
                                         >
@@ -1199,6 +1222,7 @@ export function AdminPanel({ isOpen, onClose, onAuthChange }: AdminPanelProps) {
                                           Aprobar
                                         </button>
                                         <button
+                                          data-cy="admin-reject-story-button"
                                           onClick={() => handleReviewStory(story.id, 'rejected')}
                                           className="px-3 py-2 rounded-lg bg-red-600 text-white text-sm font-medium hover:bg-red-700 flex items-center gap-2"
                                         >
@@ -1210,6 +1234,7 @@ export function AdminPanel({ isOpen, onClose, onAuthChange }: AdminPanelProps) {
                                   )}
 
                                   <button
+                                    data-cy="admin-delete-story-button"
                                     onClick={() => handleDeleteStory(story.id)}
                                     className="px-3 py-2 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 text-sm font-medium flex items-center gap-2"
                                   >

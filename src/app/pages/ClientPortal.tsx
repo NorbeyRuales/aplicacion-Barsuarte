@@ -250,6 +250,7 @@ export function ClientPortal() {
                       Correo Electrónico
                     </label>
                     <input
+                      data-cy="login-email"
                       type="email"
                       value={loginEmail}
                       onChange={(e) => setLoginEmail(e.target.value)}
@@ -264,6 +265,7 @@ export function ClientPortal() {
                     </label>
                     <div className="relative">
                       <input
+                        data-cy="login-password"
                         type={showPassword ? 'text' : 'password'}
                         value={loginPassword}
                         onChange={(e) => setLoginPassword(e.target.value)}
@@ -282,6 +284,7 @@ export function ClientPortal() {
                     </div>
                   </div>
                   <button
+                    data-cy="login-submit"
                     type="submit"
                     className="w-full bg-gradient-to-r from-fuchsia-600 to-purple-600 text-white py-3 rounded-xl font-medium hover:shadow-lg hover:shadow-fuchsia-300 transition-all flex items-center justify-center gap-2"
                   >
@@ -442,6 +445,7 @@ export function ClientPortal() {
             {isAdmin && (
               <button
                 onClick={() => setAdminOpen(true)}
+                data-cy="portal-admin-button"
                 className="flex items-center gap-2 px-3 py-2 text-sm text-fuchsia-600 bg-fuchsia-50 hover:bg-fuchsia-100 rounded-lg transition-all font-medium border border-fuchsia-200 shadow-sm"
               >
                 <Settings className="w-4 h-4" />
@@ -450,6 +454,7 @@ export function ClientPortal() {
             )}
             <button
               onClick={handleLogout}
+              data-cy="portal-logout-button"
               className="flex items-center gap-2 px-3 py-2 text-sm text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
             >
               <LogOut className="w-4 h-4" />
@@ -465,6 +470,7 @@ export function ClientPortal() {
           <div className="flex gap-1">
             <button
               onClick={() => navigate(CLIENT_PROFILE_ROUTE)}
+              data-cy="client-profile-tab"
               className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
                 location.pathname === CLIENT_PROFILE_ROUTE || location.pathname === CLIENT_PORTAL_ROUTE
                   ? 'border-fuchsia-600 text-fuchsia-600'
@@ -476,6 +482,7 @@ export function ClientPortal() {
             </button>
             <button
               onClick={() => navigate('/clientes/mensajes')}
+              data-cy="client-messages-tab"
               className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
                 location.pathname === '/clientes/mensajes'
                   ? 'border-fuchsia-600 text-fuchsia-600'
@@ -487,6 +494,7 @@ export function ClientPortal() {
             </button>
             <button
               onClick={() => navigate('/clientes/historia')}
+              data-cy="client-story-tab"
               className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
                 location.pathname === '/clientes/historia'
                   ? 'border-fuchsia-600 text-fuchsia-600'

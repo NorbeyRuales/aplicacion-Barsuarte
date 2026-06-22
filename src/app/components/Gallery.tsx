@@ -83,6 +83,7 @@ export function Gallery() {
               ? uploadedImages.map((product, index) => (
                   <motion.div
                     key={product.id}
+                    data-cy="gallery-product-card"
                     initial={{ opacity: 0, scale: 0.9 }}
                     whileInView={{ opacity: 1, scale: 1 }}
                     viewport={{ once: true }}
@@ -99,7 +100,7 @@ export function Gallery() {
                       />
                     )}
                     <div className="p-4 bg-white border-t border-gray-100">
-                      <h3 className="font-bold text-gray-800 mb-1 line-clamp-2">
+                      <h3 data-cy="gallery-product-title" className="font-bold text-gray-800 mb-1 line-clamp-2">
                         {product.title}
                       </h3>
                       {product.description && (
@@ -111,6 +112,7 @@ export function Gallery() {
                         </p>
                       )}
                       <button
+                        data-cy="gallery-consult-button"
                         onClick={() => startProductInquiry(product)}
                         className="mt-3 w-full px-4 py-2 rounded-lg bg-gradient-to-r from-fuchsia-600 to-purple-600 text-white text-sm font-medium hover:shadow-lg hover:shadow-fuchsia-200 transition-all flex items-center justify-center gap-2"
                       >

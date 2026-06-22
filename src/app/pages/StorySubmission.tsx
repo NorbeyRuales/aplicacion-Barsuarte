@@ -128,6 +128,7 @@ export function StorySubmission() {
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">Nombre del emprendimiento</label>
               <input
+                data-cy="story-title"
                 value={title}
                 onChange={(event) => setTitle(event.target.value)}
                 maxLength={80}
@@ -140,6 +141,7 @@ export function StorySubmission() {
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">Descripción breve</label>
               <textarea
+                data-cy="story-description"
                 value={description}
                 onChange={(event) => setDescription(event.target.value)}
                 maxLength={320}
@@ -153,6 +155,7 @@ export function StorySubmission() {
 
             <div>
               <input
+                data-cy="story-image"
                 ref={imageInputRef}
                 type="file"
                 accept="image/*"
@@ -176,6 +179,7 @@ export function StorySubmission() {
             )}
 
             <button
+              data-cy="submit-story-button"
               type="submit"
               disabled={submitting}
               className="w-full bg-gradient-to-r from-fuchsia-600 to-purple-600 text-white py-3 rounded-xl font-medium hover:shadow-lg hover:shadow-fuchsia-300 transition-all disabled:opacity-50 flex items-center justify-center gap-2"

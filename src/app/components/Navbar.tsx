@@ -149,6 +149,7 @@ export function Navbar() {
             <Link
               to={portalRoute}
               onClick={() => setMobileOpen(false)}
+              data-cy="navbar-portal-link"
               className={`hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 ${
                 solidBg
                   ? 'border border-purple-300 text-purple-600 hover:bg-purple-50'
@@ -161,6 +162,7 @@ export function Navbar() {
             {canOpenAdmin && (
               <button
                 onClick={handleAdminClick}
+                data-cy="navbar-admin-button"
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 ${
                   canOpenAdmin
                     ? 'bg-fuchsia-600 text-white shadow-md shadow-fuchsia-300'
@@ -176,6 +178,7 @@ export function Navbar() {
             {session.isLoggedIn && (
               <button
                 onClick={handleLogout}
+                data-cy="navbar-logout-button"
                 className={`hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 ${
                   solidBg
                     ? 'text-gray-600 hover:text-red-600 hover:bg-red-50'
